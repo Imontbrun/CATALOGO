@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo — Categorías y Subcategorías</title>
+  <style>
+    :root {
+      --bg:          #0d1117;
+      --surface:     #161b22;
+      --surface2:    #1c2128;
+      --border:      #30363d;
+      --text:        #e6edf3;
+      --text-muted:  #8b949e;
+      --item-bg:     #21262d;
+      --item-border: #30363d;
+      --item-text:   #c9d1d9;
+      --dup-bg:      #2d2000;
+      --dup-border:  #d97706;
+      --dup-text:    #fbbf24;
+      --drag-over:   rgba(56,139,253,0.15);
+      --placeholder: #1f6feb;
+      --accent:      #58a6ff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', -apple-system, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 28px 20px 60px;
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .page-header h1 { font-size: 22px; font-weight: 700; color: var(--text); }
+    .page-header p  { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+    .btn {
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .8; }
+    .btn-primary   { background: #1f6feb; color: #fff; border-color: #1f6feb; }
+    .btn-secondary { background: var(--surface2); color: var(--text); }
+    .btn-danger    { background: #b91c1c; color: #fff; border-color: #b91c1c; }
+
+    /* LEGEND */
+    .legend {
+      display: flex; gap: 20px; flex-wrap: wrap;
+      margin-bottom: 24px;
+      font-size: 12px; color: var(--text-muted);
+    }
+    .legend span { display: flex; align-items: center; gap: 6px; }
+    .legend-dot  { width: 10px; height: 10px; border-radius: 3px; }
+    .dot-normal  { background: var(--item-bg); border: 1px solid var(--item-border); }
+    .dot-dup     { background: var(--dup-bg);  border: 1px solid var(--dup-border); }
+
+    /* GRID */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 18px;
+      margin-bottom: 36px;
+    }
+
+    /* CARD */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-header h2  { font-size: 14px; font-weight: 700; color: #fff; }
+    .card-header .count {
+      font-size: 11px; color: rgba(255,255,255,.7);
+      background: rgba(0,0,0,.25);
+      padding: 2px 8px; border-radius: 99px;
+    }
+
+    /* Category header colors */
+    .cat-textil     .card-header { background: #4338ca; }
+    .cat-bolsos     .card-header { background: #c2410c; }
+    .cat-impresos   .card-header { background: #15803d; }
+    .cat-exhibicion .card-header { background: #b91c1c; }
+    .cat-eventos    .card-header { background: #9d174d; }
+    .cat-tech       .card-header { background: #1d4ed8; }
+    .cat-electro    .card-header { background: #0f766e; }
+    .cat-hogar      .card-header { background: #92400e; }
+    .cat-deportivos .card-header { background: #065f46; }
+    .cat-misc       .card-header { background: #374151; }
+
+    .card-body { padding: 14px 16px; }
+
+    /* SUBCATEGORY */
+    .subcategory {
+      margin-bottom: 16px;
+      border-left: 3px solid var(--subcat-color, var(--border));
+      padding-left: 12px;
+      border-radius: 0 6px 6px 0;
+    }
+    .subcategory:last-child { margin-bottom: 0; }
+
+    .subcat-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      color: var(--subcat-color, var(--text-muted));
+      margin-bottom: 8px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid color-mix(in srgb, var(--subcat-color, var(--border)) 30%, transparent);
+    }
+
+    /* DROP ZONE */
+    .drop-zone {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      min-height: 32px;
+      padding: 4px;
+      border-radius: 6px;
+      transition: background .15s;
+      position: relative;
+    }
+
+    .drop-zone.drag-over {
+      background: var(--drag-over);
+      outline: 1px dashed var(--accent);
+    }
+
+    /* PLACEHOLDER */
+    .drag-placeholder {
+      width: 3px;
+      height: 22px;
+      background: var(--placeholder);
+      border-radius: 2px;
+      align-self: center;
+    }
+
+    /* ITEM */
+    .item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      padding: 3px 8px 3px 9px;
+      border-radius: 99px;
+      background: var(--item-bg);
+      color: var(--item-text);
+      border: 1px solid var(--item-border);
+      cursor: grab;
+      user-select: none;
+      transition: opacity .15s, box-shadow .15s;
+      position: relative;
+    }
+
+    .item:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(88,166,255,.2);
+    }
+
+    .item.dragging {
+      opacity: .35;
+      cursor: grabbing;
+    }
+
+    .item.duplicate {
+      background: var(--dup-bg);
+      color: var(--dup-text);
+      border-color: var(--dup-border);
+    }
+
+    .item.duplicate .item-flag { font-size: 9px; opacity: .7; }
+
+    .item-label { line-height: 1.3; }
+
+    .item-del {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0;
+      opacity: 0;
+      transition: opacity .15s, color .15s;
+      flex-shrink: 0;
+    }
+
+    .item:hover .item-del { opacity: 1; }
+    .item-del:hover { color: #f87171; }
+
+    /* INLINE EDIT */
+    .item-input {
+      background: var(--surface2);
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 11.5px;
+      font-family: inherit;
+      padding: 2px 6px;
+      outline: none;
+      width: 120px;
+    }
+
+    /* ADD ITEM BUTTON */
+    .add-item-btn {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: none;
+      color: var(--text-muted);
+      border: 1px dashed var(--border);
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color .15s, color .15s;
+    }
+    .add-item-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ADD SUBCATEGORY BUTTON */
+    .add-subcat-btn {
+      display: block;
+      width: 100%;
+      margin-top: 14px;
+      padding: 8px;
+      background: none;
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .add-subcat-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,.04); }
+
+    /* ADD CATEGORY CARD */
+    .add-cat-card {
+      background: none;
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 140px;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      gap: 10px;
+      user-select: none;
+    }
+    .add-cat-card:hover { border-color: var(--accent); background: rgba(88,166,255,.05); }
+    .add-cat-icon  { font-size: 36px; color: var(--text-muted); line-height: 1; transition: color .15s; }
+    .add-cat-label { font-size: 13px; color: var(--text-muted); font-weight: 500; transition: color .15s; }
+    .add-cat-card:hover .add-cat-icon,
+    .add-cat-card:hover .add-cat-label { color: var(--accent); }
+
+    /* PENDING NOTE */
+    .pending-note {
+      font-size: 12px;
+      color: #fca5a5;
+      background: rgba(239,68,68,.1);
+      border: 1px solid rgba(239,68,68,.3);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+    }
+
+    /* REVIEW TABLE */
+    .review-section {
+      background: var(--surface);
+      border: 1px solid var(--dup-border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 36px;
+    }
+
+    .review-header {
+      background: rgba(217,119,6,.12);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(217,119,6,.3);
+    }
+    .review-header h3 { font-size: 14px; font-weight: 700; color: #fbbf24; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      text-align: left; padding: 9px 16px;
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 10px 16px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block; font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 99px;
+    }
+    .badge-dup { background: var(--dup-bg); color: var(--dup-text); border: 1px solid var(--dup-border); }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #1f6feb; color: #fff;
+      font-size: 13px; padding: 10px 18px;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.4);
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s;
+      z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+
+    footer { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 16px; }
+    .sb-status { font-size: 11px; transition: color .3s; padding: 0 4px; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+
+<div class="page-header">
+  <div>
+    <h1>Catálogo de Compras — Categorías</h1>
+    <p>Arrastra ítems entre subcategorías · Doble clic para renombrar · Hover + × para eliminar</p>
+  </div>
+  <div class="header-actions">
+    <span id="sb-status" class="sb-status" style="color:#8b949e">⬤ Conectando...</span>
+    <button class="btn btn-secondary" onclick="resetState()">↺ Restablecer</button>
+    <button class="btn btn-primary"   onclick="saveManual()">✓ Guardar</button>
+  </div>
+</div>
+
+<div class="legend">
+  <span><div class="legend-dot dot-normal"></div> Ítem confirmado</span>
+  <span><div class="legend-dot dot-dup"></div> Ítem duplicado ⚑ (pendiente de asignación)</span>
+</div>
+
+<div class="grid" id="grid">
+
+  <!-- TEXTIL -->
+  <div class="card cat-textil">
+    <div class="card-header"><h2>Textil</h2><span class="count" id="count-textil"></span></div>
+    <div class="card-body">
+      <div class="subcategory">
+        <div class="subcat-label">Ropa</div>
+        <div class="drop-zone" id="textil-ropa">
+          <span class="item" draggable="true"><span class="item-label">Camisetas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Franelas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Camisas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Camisas UV</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Chemises</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Guayaberas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Chalecos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Chaquetas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cortavientos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Crewneck</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Croptops</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Hoodies</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Suéter</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Tops</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Vestidos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Faldas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pantalones</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Shorts</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pijamas</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('textil-ropa')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">Calzado y Accesorios</div>
+        <div class="drop-zone" id="textil-calzado">
+          <span class="item" draggable="true"><span class="item-label">Zapatos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pantunflas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Correas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Medias</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Gorras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Viseras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Sombreros</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Buckethats</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pañoletas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Bandanas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Tocados</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('textil-calzado')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">Uniformes y Trabajo</div>
+        <div class="drop-zone" id="textil-uniformes">
+          <span class="item" draggable="true"><span class="item-label">Uniformes Promotoras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Delantales</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Batas tobero</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Petos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Antifaz</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Baberos</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('textil-uniformes')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">Hogar Textil</div>
+        <div class="drop-zone" id="textil-hogar">
+          <span class="item" draggable="true"><span class="item-label">Cobijas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Toallas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Manteles</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Paños de cocina</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pañitos de cocina</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pareo</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Ponchos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Ruanas</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('textil-hogar')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">⚑ Pendiente de ubicación</div>
+        <div class="drop-zone" id="textil-pendiente">
+          <span class="item duplicate" draggable="true"><span class="item-label">Dados</span><span class="item-flag"> ⚑</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('textil-pendiente')">+ añadir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOLSOS -->
+  <div class="card cat-bolsos">
+    <div class="card-header"><h2>Bolsos</h2><span class="count" id="count-bolsos"></span></div>
+    <div class="card-body">
+      <div class="subcategory">
+        <div class="subcat-label">Todos los tipos</div>
+        <div class="drop-zone" id="bolsos-todos">
+          <span class="item" draggable="true"><span class="item-label">Billeteras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Bolsos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Carteras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Drybags</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Estuches</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Maletas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Monederos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Morrales</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Neceser</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Portalaptos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Taqueras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Totebags</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Tulas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Bolsas ecológicas</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('bolsos-todos')">+ añadir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPRESOS -->
+  <div class="card cat-impresos">
+    <div class="card-header"><h2>Impresos</h2><span class="count" id="count-impresos"></span></div>
+    <div class="card-body">
+      <div class="subcategory">
+        <div class="subcat-label">Papelería y Editorial</div>
+        <div class="drop-zone" id="impresos-papeleria">
+          <span class="item" draggable="true"><span class="item-label">Afiches</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Volantes</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Folletos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Trípticos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Dípticos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Calendarios</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Agendas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cuadernos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Blocs</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Food planners</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Recetarios</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Revistas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Diplomas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Menú</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Carpetas</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('impresos-papeleria')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">POP Impreso</div>
+        <div class="drop-zone" id="impresos-pop">
+          <span class="item" draggable="true"><span class="item-label">Habladores</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Colgantes</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Danglers</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Tendcards</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Toppers</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Collarines</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Stickers</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Calcomanías</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Tattoo</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Brazaletes</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Post-It</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Banderines de Papel</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Abanicos de Papel</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pendones</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Tacos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cubo anaquel</span><button class="item-del">×</button></span>
+          <span class="item duplicate" draggable="true"><span class="item-label">Rompetráficos</span><span class="item-flag"> ⚑</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('impresos-pop')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">Empaques</div>
+        <div class="drop-zone" id="impresos-empaques">
+          <span class="item" draggable="true"><span class="item-label">Bolsas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Bolsas de papel</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Bolsas plásticas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cajas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Etiquetas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Blisters</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Papel de regalo</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Papel encerado</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cintas adhesivas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Papel bobina</span><button class="item-del">×</button></span>
+          <span class="item duplicate" draggable="true"><span class="item-label">Servilletas</span><span class="item-flag"> ⚑</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('impresos-empaques')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">Otros Impresos</div>
+        <div class="drop-zone" id="impresos-otros">
+          <span class="item" draggable="true"><span class="item-label">Cupones</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Secantes</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Individuales</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Preciador</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Talonarios</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Tarjetas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Portaconos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Buzones</span><button class="item-del">×</button></span>
+          <span class="item duplicate" draggable="true"><span class="item-label">Rompecabezas</span><span class="item-flag"> ⚑</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('impresos-otros')">+ añadir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXHIBICIÓN -->
+  <div class="card cat-exhibicion">
+    <div class="card-header"><h2>Exhibición</h2><span class="count" id="count-exhibicion"></span></div>
+    <div class="card-body">
+      <div class="subcategory">
+        <div class="subcat-label">Exhibidores</div>
+        <div class="drop-zone" id="exhibicion-exhibidores">
+          <span class="item" draggable="true"><span class="item-label">Exhibidores de Piso</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Exhibidores de Lego</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Glorificadores</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Bandejas Armatorres</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Puntas de Gondolas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Checkout</span><button class="item-del">×</button></span>
+          <span class="item duplicate" draggable="true"><span class="item-label">Parrilleras</span><span class="item-flag"> ⚑</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pitilleros</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Servilleteros</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Islas</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('exhibicion-exhibidores')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">Señalización POP</div>
+        <div class="drop-zone" id="exhibicion-senalizacion">
+          <span class="item" draggable="true"><span class="item-label">Cenefas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Flangers</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Microperforados</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pizarras de Precios</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Capuchones</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Ristras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Avisos de carritos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Avisos luminosos</span><button class="item-del">×</button></span>
+          <span class="item duplicate" draggable="true"><span class="item-label">Rompetráficos</span><span class="item-flag"> ⚑</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('exhibicion-senalizacion')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">Estructuras y Display</div>
+        <div class="drop-zone" id="exhibicion-estructuras">
+          <span class="item" draggable="true"><span class="item-label">Backing</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Podium</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Corpóreos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Standee</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Marcos delimitadores</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Banderas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Banderines</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Ruletas</span><button class="item-del">×</button></span>
+          <span class="item duplicate" draggable="true"><span class="item-label">Rompecabezas</span><span class="item-flag"> ⚑</span><button class="item-del">×</button></span>
+          <span class="item duplicate" draggable="true"><span class="item-label">Dados</span><span class="item-flag"> ⚑</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('exhibicion-estructuras')">+ añadir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EVENTOS Y RECREACIÓN -->
+  <div class="card cat-eventos">
+    <div class="card-header"><h2>Eventos y Recreación</h2><span class="count" id="count-eventos"></span></div>
+    <div class="card-body">
+      <div class="subcategory">
+        <div class="subcat-label">Estructuras</div>
+        <div class="drop-zone" id="eventos-estructuras">
+          <span class="item" draggable="true"><span class="item-label">Arcos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Barras Truss</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Carpas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Toldos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Stands</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Kioskos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Igloo</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('eventos-estructuras')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">Mobiliario</div>
+        <div class="drop-zone" id="eventos-mobiliario">
+          <span class="item" draggable="true"><span class="item-label">Mesas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Sillas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Barras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Barras degustación</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Photobooth</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Sombrillas</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('eventos-mobiliario')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">Inflables y Activaciones</div>
+        <div class="drop-zone" id="eventos-inflables">
+          <span class="item" draggable="true"><span class="item-label">Inflables interactivos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Réplicas inflables</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Ciclones</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Globos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Mascotas interactivas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Grama artificial</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('eventos-inflables')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">Premios y Reconocimientos</div>
+        <div class="drop-zone" id="eventos-premios">
+          <span class="item" draggable="true"><span class="item-label">Medallas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Trofeos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Placas de reconocimiento</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('eventos-premios')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">Varios Evento</div>
+        <div class="drop-zone" id="eventos-varios">
+          <span class="item" draggable="true"><span class="item-label">Flybanners</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Thunder sticks</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Barriles</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Escurridores</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Juegos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Ventiladores holográficos</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('eventos-varios')">+ añadir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TECNOLOGÍA -->
+  <div class="card cat-tech">
+    <div class="card-header"><h2>Tecnología y Electrónica</h2><span class="count" id="count-tech"></span></div>
+    <div class="card-body">
+      <div class="subcategory">
+        <div class="subcat-label">Todos los tipos</div>
+        <div class="drop-zone" id="tech-todos">
+          <span class="item" draggable="true"><span class="item-label">Audífonos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cables</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cámaras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Celular</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cónsolas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cornetas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Laptop</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Micrófonos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Mouse</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pendrive</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Reloj inteligente</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Tablets</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Tarjetas NFC</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Teclados</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Trípode</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('tech-todos')">+ añadir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ELECTRODOMÉSTICOS -->
+  <div class="card cat-electro">
+    <div class="card-header"><h2>Electrodomésticos</h2><span class="count" id="count-electro"></span></div>
+    <div class="card-body">
+      <div class="subcategory">
+        <div class="subcat-label">Todos los tipos</div>
+        <div class="drop-zone" id="electro-todos">
+          <span class="item" draggable="true"><span class="item-label">Aires Acondicionados</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Asistentes de cocina</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Bases de TV</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Batidoras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cafeteras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Congelador</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cotuferas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Freidoras de aire</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Grecas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Hornos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Licuadoras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Microondas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Neveras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Televisores</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Ventiladores</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('electro-todos')">+ añadir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOGAR -->
+  <div class="card cat-hogar">
+    <div class="card-header"><h2>Hogar</h2><span class="count" id="count-hogar"></span></div>
+    <div class="card-body">
+      <div class="subcategory">
+        <div class="subcat-label">Cocina y Preparación</div>
+        <div class="drop-zone" id="hogar-cocina">
+          <span class="item" draggable="true"><span class="item-label">Areperas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Budare</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Empanadera</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Ollas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Sartenes</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Sanducheras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Coladores</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Artículos de cocina</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cubiertos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Platos</span><button class="item-del">×</button></span>
+          <span class="item duplicate" draggable="true"><span class="item-label">Parrilleras</span><span class="item-flag"> ⚑</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('hogar-cocina')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">Bebidas</div>
+        <div class="drop-zone" id="hogar-bebidas">
+          <span class="item" draggable="true"><span class="item-label">Botellas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Mugs</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Tazas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Vasos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Termos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Shakers</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Jarras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Jarras apilables</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pitillos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Destapadores</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Hieleras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cavas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Bowls</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Envases</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Envases de lata</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('hogar-bebidas')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">Mascotas</div>
+        <div class="drop-zone" id="hogar-mascotas">
+          <span class="item" draggable="true"><span class="item-label">Palas para mascotas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Platos de perro</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('hogar-mascotas')">+ añadir</button>
+      </div>
+      <div class="subcategory">
+        <div class="subcat-label">Hogar General</div>
+        <div class="drop-zone" id="hogar-general">
+          <span class="item" draggable="true"><span class="item-label">Cepillo</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cestas de mercado</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cestas ropa</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cojin</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cuerda tendedero</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Dispensador de jabón</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Espejos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Ganchos de ropa</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pinzas de ropa</span><button class="item-del">×</button></span>
+          <span class="item duplicate" draggable="true"><span class="item-label">Servilletas</span><span class="item-flag"> ⚑</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('hogar-general')">+ añadir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEPORTIVOS -->
+  <div class="card cat-deportivos">
+    <div class="card-header"><h2>Deportivos</h2><span class="count" id="count-deportivos"></span></div>
+    <div class="card-body">
+      <div class="subcategory">
+        <div class="subcat-label">Todos los tipos</div>
+        <div class="drop-zone" id="deportivos-todos">
+          <span class="item" draggable="true"><span class="item-label">Balones</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Bates</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Bicicletas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Bolas Criollas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cascos Beisbol</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Domino</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Guantes Beisbol</span><button class="item-del">×</button></span>
+          <span class="item duplicate" draggable="true"><span class="item-label">Lentes</span><span class="item-flag"> ⚑</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Mangas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Mat de Yoga</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pelotas Beisbol</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pelotas de Goma</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pelotas Futbol</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pelotas Softball</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Raquetas</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('deportivos-todos')">+ añadir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MISCELÁNEOS -->
+  <div class="card cat-misc">
+    <div class="card-header"><h2>Misceláneos</h2><span class="count" id="count-misc"></span></div>
+    <div class="card-body">
+      <div class="pending-note">⏳ Subcategorías pendientes de revisión en reunión</div>
+      <div class="subcategory">
+        <div class="subcat-label">Sin subcategorizar</div>
+        <div class="drop-zone" id="misc-todos">
+          <span class="item" draggable="true"><span class="item-label">Abanicos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Bolígrafos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Bolsas de perros</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Bubble head</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Carrito plegable</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cintas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Cocteleras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Collares</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Colores</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Dedos de espuma</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Identificadores de maletas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Imanes</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Impermeables</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Insignias</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Lanyards</span><button class="item-del">×</button></span>
+          <span class="item duplicate" draggable="true"><span class="item-label">Lentes</span><span class="item-flag"> ⚑</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Llaveros</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Marcadores</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">MiniLanyard</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Mousepad</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Paraguas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pecheras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pelotas de playa</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Peluches</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pines</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Popsockets</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Porta tarjetas para celular</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Portacubiertos</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Portalatas</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Pulseras</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Relojes</span><button class="item-del">×</button></span>
+          <span class="item duplicate" draggable="true"><span class="item-label">Servilletas</span><span class="item-flag"> ⚑</span><button class="item-del">×</button></span>
+          <span class="item" draggable="true"><span class="item-label">Yoyos</span><button class="item-del">×</button></span>
+        </div>
+        <button class="add-item-btn" onclick="addItem('misc-todos')">+ añadir</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TABLA DUPLICADOS -->
+<div class="review-section">
+  <div class="review-header">
+    <span style="font-size:18px">⚑</span>
+    <h3>Ítems duplicados — Pendiente de revisión</h3>
+  </div>
+  <div style="padding:0">
+    <table>
+      <thead><tr><th>Ítem</th><th>Aparece en</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Rompetráficos</strong></td><td>Impresos › POP Impreso · Exhibición › Señalización POP</td><td><span class="badge badge-dup">Por definir</span></td></tr>
+        <tr><td><strong>Rompecabezas</strong></td><td>Impresos › Otros Impresos · Exhibición › Estructuras y Display</td><td><span class="badge badge-dup">Por definir</span></td></tr>
+        <tr><td><strong>Servilletas</strong></td><td>Impresos › Empaques · Hogar › Hogar General · Misceláneos</td><td><span class="badge badge-dup">Por definir</span></td></tr>
+        <tr><td><strong>Lentes</strong></td><td>Misceláneos · Deportivos</td><td><span class="badge badge-dup">Por definir</span></td></tr>
+        <tr><td><strong>Dados</strong></td><td>Textil · Exhibición › Estructuras y Display</td><td><span class="badge badge-dup">Por definir</span></td></tr>
+        <tr><td><strong>Parrilleras</strong></td><td>Exhibición › Exhibidores · Hogar › Cocina y Preparación</td><td><span class="badge badge-dup">Por definir</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<footer>Catálogo de Compras · v1.1 · 2026 · Los cambios se guardan automáticamente en el navegador</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const STORAGE_KEY = 'catalogo-categorias-v2';
+  const DB = supabase.createClient(
+    'https://ciegpgxrprrzfcmcjndj.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpZWdwZ3hycHJyemZjbWNqbmRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1OTM5NjQsImV4cCI6MjA5NDE2OTk2NH0.BdM93k9SMQ61IWS38PIF5OVctrt1t80PQqows5ub-P0'
+  );
+
+  const SUBCAT_COLORS = [
+    '#60a5fa','#34d399','#fb923c','#f472b6','#fbbf24',
+    '#a78bfa','#2dd4bf','#f87171','#a3e635','#e879f9',
+    '#38bdf8','#facc15','#4ade80','#c084fc','#fb7185',
+  ];
+
+  const CAT_HEADER_COLORS = [
+    '#7c3aed','#b45309','#0369a1','#065f46','#9d174d',
+    '#0284c7','#6b21a8','#0f766e','#92400e','#166534',
+    '#4338ca','#c2410c','#15803d','#b91c1c','#1e3a8a',
+  ];
+
+  let draggedItem = null;
+  let placeholder  = null;
+  let customCatColorIdx = 0;
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', async () => {
+    loadState();
+    injectAddSubcatButtons();
+    injectAddCatCard();
+    updateAllCounts();
+    bindDeleteButtons();
+    applySubcatColors();
+    bindSubcatRename();
+    await syncFromSupabase();
+  });
+
+  // ── SUPABASE ──────────────────────────────────────────────────────────────
+  function setStatus(s) {
+    const el = document.getElementById('sb-status');
+    if (!el) return;
+    const map = {
+      connecting: ['⬤ Conectando...',  '#8b949e'],
+      online:     ['⬤ Sincronizado',   '#3fb950'],
+      saving:     ['⬤ Guardando...',   '#d29922'],
+      saved:      ['⬤ Guardado',       '#3fb950'],
+      offline:    ['⬤ Sin conexión',   '#f85149'],
+    };
+    const [text, color] = map[s] || map.offline;
+    el.textContent = text; el.style.color = color;
+  }
+
+  async function syncFromSupabase() {
+    setStatus('connecting');
+    try {
+      const { data, error } = await DB.from('app_state').select('value').eq('key', 'taxonomy').single();
+      if (error || !data) { setStatus('online'); return; }
+      const sbData = data.value;
+      if (!Array.isArray(sbData) || sbData.length === 0) { setStatus('online'); return; }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sbData));
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+      sbData.forEach(c => grid.appendChild(buildCardFromData(c)));
+      injectAddSubcatButtons();
+      injectAddCatCard();
+      updateAllCounts();
+      bindDeleteButtons();
+      applySubcatColors();
+      bindSubcatRename();
+      setStatus('online');
+    } catch(e) { setStatus('offline'); console.warn('Supabase:', e); }
+  }
+
+  async function pushToSupabase(data) {
+    setStatus('saving');
+    try {
+      await DB.from('app_state').upsert({ key: 'taxonomy', value: data, updated_at: new Date().toISOString() });
+      setStatus('saved');
+    } catch(e) { setStatus('offline'); }
+  }
+
+  // ── INJECT UI HELPERS ─────────────────────────────────────────────────────
+  function injectAddSubcatButtons() {
+    document.querySelectorAll('#grid .card:not(#add-cat-card)').forEach(card => {
+      if (card.querySelector('.add-subcat-btn')) return;
+      const btn = document.createElement('button');
+      btn.className = 'add-subcat-btn';
+      btn.textContent = '+ Nueva subcategoría';
+      btn.onclick = () => addSubcategory(card);
+      card.querySelector('.card-body').appendChild(btn);
+    });
+  }
+
+  function injectAddCatCard() {
+    if (document.getElementById('add-cat-card')) return;
+    const card = document.createElement('div');
+    card.id = 'add-cat-card';
+    card.className = 'add-cat-card';
+    card.onclick = addCategory;
+    card.innerHTML = '<div class="add-cat-icon">+</div><div class="add-cat-label">Nueva categoría</div>';
+    document.getElementById('grid').appendChild(card);
+  }
+
+  function applySubcatColors() {
+    document.querySelectorAll('#grid .card:not(#add-cat-card)').forEach(card => {
+      card.querySelectorAll('.subcategory').forEach((sub, i) => {
+        sub.style.setProperty('--subcat-color', SUBCAT_COLORS[i % SUBCAT_COLORS.length]);
+      });
+    });
+  }
+
+  // ── DRAG & DROP ───────────────────────────────────────────────────────────
+  document.addEventListener('dragstart', e => {
+    const item = e.target.closest('.item');
+    if (!item) return;
+    draggedItem = item;
+    item.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+
+    placeholder = document.createElement('div');
+    placeholder.className = 'drag-placeholder';
+  });
+
+  document.addEventListener('dragend', () => {
+    if (draggedItem) draggedItem.classList.remove('dragging');
+    if (placeholder && placeholder.parentNode) placeholder.remove();
+    document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('drag-over'));
+    draggedItem = null;
+    placeholder = null;
+    updateAllCounts();
+    saveState();
+  });
+
+  document.addEventListener('dragover', e => {
+    e.preventDefault();
+    const zone = e.target.closest('.drop-zone');
+    if (!zone || !draggedItem) return;
+
+    document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('drag-over'));
+    zone.classList.add('drag-over');
+
+    const after = getInsertAfter(zone, e.clientY);
+    if (after) {
+      zone.insertBefore(placeholder, after);
+    } else {
+      zone.appendChild(placeholder);
+    }
+  });
+
+  document.addEventListener('dragleave', e => {
+    const zone = e.target.closest('.drop-zone');
+    if (zone && !zone.contains(e.relatedTarget)) {
+      zone.classList.remove('drag-over');
+    }
+  });
+
+  document.addEventListener('drop', e => {
+    e.preventDefault();
+    const zone = e.target.closest('.drop-zone');
+    if (!zone || !draggedItem) return;
+
+    const after = getInsertAfter(zone, e.clientY);
+    if (after) {
+      zone.insertBefore(draggedItem, after);
+    } else {
+      zone.appendChild(draggedItem);
+    }
+    zone.classList.remove('drag-over');
+  });
+
+  function getInsertAfter(zone, y) {
+    const items = [...zone.querySelectorAll('.item:not(.dragging)')];
+    return items.find(item => {
+      const box = item.getBoundingClientRect();
+      return y < box.top + box.height / 2;
+    }) || null;
+  }
+
+  // ── BUILD DOM ─────────────────────────────────────────────────────────────
+  function buildCardFromData({ name, catClass, customColor, isPending, subcategories }) {
+    const card = document.createElement('div');
+    card.className = 'card' + (catClass ? ` ${catClass}` : '');
+    if (customColor) card.dataset.headerColor = customColor;
+
+    const header = document.createElement('div');
+    header.className = 'card-header';
+    if (customColor && !catClass) header.style.background = customColor;
+    header.innerHTML = `<h2>${name}</h2><span class="count"></span>`;
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'card-body';
+    if (isPending) {
+      const note = document.createElement('div');
+      note.className = 'pending-note';
+      note.textContent = '⏳ Subcategorías pendientes de revisión en reunión';
+      body.appendChild(note);
+    }
+    (subcategories || []).forEach(s => body.appendChild(buildSubcatEl(s.name, s.zoneId, s.items)));
+
+    const addSubBtn = document.createElement('button');
+    addSubBtn.className = 'add-subcat-btn';
+    addSubBtn.textContent = '+ Nueva subcategoría';
+    addSubBtn.onclick = () => addSubcategory(card);
+    body.appendChild(addSubBtn);
+
+    card.appendChild(body);
+    return card;
+  }
+
+  function buildSubcatEl(name, zoneId, items = []) {
+    const subcat = document.createElement('div');
+    subcat.className = 'subcategory';
+
+    const label = document.createElement('div');
+    label.className = 'subcat-label';
+    label.textContent = name;
+    label.title = 'Doble clic para renombrar';
+    label.style.cursor = 'pointer';
+    subcat.appendChild(label);
+
+    const zone = document.createElement('div');
+    zone.className = 'drop-zone';
+    zone.id = zoneId || `zone-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+    items.forEach(({ text, dup }) => zone.appendChild(buildItem(text, dup)));
+    subcat.appendChild(zone);
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-item-btn';
+    addBtn.textContent = '+ añadir';
+    addBtn.onclick = () => addItem(zone.id);
+    subcat.appendChild(addBtn);
+
+    return subcat;
+  }
+
+  // ── ADD SUBCATEGORY ───────────────────────────────────────────────────────
+  function addSubcategory(card) {
+    const name = prompt('Nombre de la nueva subcategoría:');
+    if (!name?.trim()) return;
+    const body = card.querySelector('.card-body');
+    const addSubBtn = body.querySelector('.add-subcat-btn');
+    const subcat = buildSubcatEl(name.trim(), `zone-custom-${Date.now()}`, []);
+    body.insertBefore(subcat, addSubBtn);
+    applySubcatColors();
+    bindSubcatRename();
+    bindDeleteButtons();
+    updateAllCounts();
+    saveState();
+    showToast(`Subcategoría "${name.trim()}" creada`);
+  }
+
+  // ── ADD CATEGORY ──────────────────────────────────────────────────────────
+  function addCategory() {
+    const name = prompt('Nombre de la nueva categoría:');
+    if (!name?.trim()) return;
+    const color = CAT_HEADER_COLORS[customCatColorIdx % CAT_HEADER_COLORS.length];
+    customCatColorIdx++;
+    const card = buildCardFromData({
+      name: name.trim(), catClass: '', customColor: color, isPending: false,
+      subcategories: [{ name: 'Sin subcategorizar', zoneId: `zone-custom-${Date.now()}`, items: [] }]
+    });
+    document.getElementById('grid').insertBefore(card, document.getElementById('add-cat-card'));
+    applySubcatColors();
+    bindSubcatRename();
+    bindDeleteButtons();
+    updateAllCounts();
+    saveState();
+    showToast(`Categoría "${name.trim()}" creada`);
+  }
+
+  // ── SUBCAT RENAME (doble clic en el label de subcategoría) ───────────────
+  function bindSubcatRename() {
+    document.querySelectorAll('.subcat-label').forEach(label => {
+      if (label._bound) return;
+      label._bound = true;
+      label.title = 'Doble clic para renombrar';
+      label.style.cursor = 'pointer';
+      label.addEventListener('dblclick', () => {
+        const original = label.textContent;
+        const color = getComputedStyle(label).color;
+        const input = document.createElement('input');
+        input.className = 'item-input';
+        input.value = original;
+        input.style.cssText = `width:100%;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:${color};padding:1px 6px;`;
+        label.replaceWith(input);
+        input.focus();
+        input.select();
+
+        const commit = () => {
+          const val = input.value.trim() || original;
+          label.textContent = val;
+          input.replaceWith(label);
+          saveState();
+          showToast(`Subcategoría renombrada a "${val}"`);
+        };
+
+        input.addEventListener('blur', commit);
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') { label.textContent = original; input.replaceWith(label); }
+        });
+      });
+    });
+  }
+
+  // ── DOUBLE-CLICK RENAME ───────────────────────────────────────────────────
+  document.addEventListener('dblclick', e => {
+    const label = e.target.closest('.item-label');
+    if (!label) return;
+
+    const original = label.textContent;
+    const input = document.createElement('input');
+    input.className = 'item-input';
+    input.value = original;
+    label.replaceWith(input);
+    input.focus();
+    input.select();
+
+    const commit = () => {
+      const val = input.value.trim() || original;
+      const newLabel = document.createElement('span');
+      newLabel.className = 'item-label';
+      newLabel.textContent = val;
+      input.replaceWith(newLabel);
+      saveState();
+      showToast(`Renombrado a "${val}"`);
+    };
+
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { commit(); }
+      if (e.key === 'Escape') {
+        const restore = document.createElement('span');
+        restore.className = 'item-label';
+        restore.textContent = original;
+        input.replaceWith(restore);
+      }
+    });
+  });
+
+  // ── DELETE ────────────────────────────────────────────────────────────────
+  function bindDeleteButtons() {
+    document.querySelectorAll('.item-del').forEach(btn => {
+      if (btn._bound) return;
+      btn._bound = true;
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const item = btn.closest('.item');
+        const name = item.querySelector('.item-label').textContent;
+        if (confirm(`¿Eliminar "${name}"?`)) {
+          item.remove();
+          updateAllCounts();
+          saveState();
+          showToast(`"${name}" eliminado`);
+        }
+      });
+    });
+  }
+
+  // ── ADD ITEM ──────────────────────────────────────────────────────────────
+  function addItem(zoneId) {
+    const zone = document.getElementById(zoneId);
+    if (!zone) return;
+
+    const input = document.createElement('input');
+    input.className = 'item-input';
+    input.placeholder = 'Nombre del ítem...';
+    input.style.margin = '2px 0';
+    zone.appendChild(input);
+    input.focus();
+
+    const commit = () => {
+      const val = input.value.trim();
+      input.remove();
+      if (!val) return;
+
+      const span = buildItem(val, false);
+      zone.appendChild(span);
+      bindDeleteButtons();
+      updateAllCounts();
+      saveState();
+      showToast(`"${val}" añadido`);
+    };
+
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') commit();
+      if (e.key === 'Escape') input.remove();
+    });
+  }
+
+  // ── BUILD ITEM ────────────────────────────────────────────────────────────
+  function buildItem(text, isDup) {
+    const span = document.createElement('span');
+    span.className = 'item' + (isDup ? ' duplicate' : '');
+    span.draggable = true;
+
+    const label = document.createElement('span');
+    label.className = 'item-label';
+    label.textContent = text;
+
+    const btn = document.createElement('button');
+    btn.className = 'item-del';
+    btn.textContent = '×';
+
+    span.appendChild(label);
+    if (isDup) {
+      const flag = document.createElement('span');
+      flag.className = 'item-flag';
+      flag.textContent = ' ⚑';
+      span.appendChild(flag);
+    }
+    span.appendChild(btn);
+    return span;
+  }
+
+  // ── COUNTS ────────────────────────────────────────────────────────────────
+  function updateAllCounts() {
+    document.querySelectorAll('#grid .card:not(#add-cat-card)').forEach(card => {
+      const el = card.querySelector('.count');
+      if (el) el.textContent = `${card.querySelectorAll('.item').length} ítems`;
+    });
+  }
+
+  // ── PERSISTENCE ───────────────────────────────────────────────────────────
+  function serializeGrid() {
+    return [...document.querySelectorAll('#grid .card:not(#add-cat-card)')].map(card => ({
+      name:       card.querySelector('.card-header h2').textContent,
+      catClass:   [...card.classList].find(c => c.startsWith('cat-')) || '',
+      customColor: card.dataset.headerColor || '',
+      isPending:  !!card.querySelector('.pending-note'),
+      subcategories: [...card.querySelectorAll('.subcategory')].map(sub => ({
+        name:   sub.querySelector('.subcat-label').textContent,
+        zoneId: sub.querySelector('.drop-zone')?.id || '',
+        items:  [...(sub.querySelector('.drop-zone')?.querySelectorAll('.item') || [])].map(item => ({
+          text: item.querySelector('.item-label').textContent,
+          dup:  item.classList.contains('duplicate'),
+        })),
+      })),
+    }));
+  }
+
+  function saveState() {
+    const data = serializeGrid();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    pushToSupabase(data);
+  }
+
+  function loadState() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      if (!Array.isArray(data)) return;
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+      data.forEach(cardData => grid.appendChild(buildCardFromData(cardData)));
+    } catch (e) {
+      console.warn('Error restaurando estado:', e);
+    }
+  }
+
+  function saveManual() { saveState(); showToast('Guardado ✓'); }
+
+  function resetState() {
+    if (!confirm('¿Restablecer la vista original? Se perderán todos los cambios guardados.')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    DB.from('app_state').delete().eq('key', 'taxonomy').then(() => location.reload());
+  }
+
+  // ── TOAST ─────────────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+  }
+</script>
+</body>
+</html>

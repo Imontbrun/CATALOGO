@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Constructor de Formularios Dinámicos</title>
+  <style>
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --surface2:  #1c2128;
+      --surface3:  #21262d;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --accent:    #58a6ff;
+      --green:     #3fb950;
+      --yellow:    #d29922;
+      --red:       #f85149;
+      --purple:    #bc8cff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+    /* ── HEADER ── */
+    .app-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .app-header h1 { font-size: 15px; font-weight: 700; }
+    .app-header p  { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .header-actions { display: flex; gap: 8px; }
+
+    .btn {
+      font-size: 12px; padding: 6px 14px; border-radius: 6px;
+      border: 1px solid var(--border); cursor: pointer; font-family: inherit;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .8; }
+    .btn-primary   { background: #1f6feb; color: #fff; border-color: #1f6feb; }
+    .btn-secondary { background: var(--surface2); color: var(--text); }
+    .btn-danger    { background: transparent; color: var(--red); border-color: var(--red); }
+    .btn-sm { font-size: 11px; padding: 4px 10px; }
+
+    /* ── BODY ── */
+    .app-body { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 280px; flex-shrink: 0;
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .sidebar-header {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sidebar-header h3 { font-size: 13px; font-weight: 700; }
+    .sidebar-header p  { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    .tree { overflow-y: auto; flex: 1; padding: 8px 0; }
+
+    .tree-cat {
+      user-select: none;
+    }
+    .tree-cat-label {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 16px; cursor: pointer; font-size: 13px; font-weight: 600;
+      color: var(--text); transition: background .1s;
+    }
+    .tree-cat-label:hover { background: var(--surface2); }
+    .tree-cat-label.active { background: rgba(88,166,255,.1); color: var(--accent); }
+    .tree-arrow { font-size: 10px; color: var(--muted); transition: transform .15s; flex-shrink: 0; }
+    .tree-arrow.open { transform: rotate(90deg); }
+    .cat-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+    .tree-subcat { padding-left: 8px; }
+    .tree-subcat-label {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 16px 5px 24px; cursor: pointer; font-size: 12px; color: var(--muted);
+      transition: background .1s;
+    }
+    .tree-subcat-label:hover { background: var(--surface2); color: var(--text); }
+
+    .tree-items { padding-left: 8px; }
+    .tree-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 16px 4px 36px; cursor: pointer; font-size: 12px;
+      color: var(--muted); border-radius: 0; transition: background .1s;
+      position: relative;
+    }
+    .tree-item::before {
+      content: ''; position: absolute; left: 24px;
+      width: 8px; height: 1px; background: var(--border);
+    }
+    .tree-item:hover { background: var(--surface2); color: var(--text); }
+    .tree-item.selected { background: rgba(88,166,255,.12); color: var(--accent); font-weight: 600; }
+    .tree-item.dup { color: var(--yellow); }
+
+    .sidebar-footer {
+      padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0;
+    }
+    .import-note { font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .import-note a { color: var(--accent); cursor: pointer; text-decoration: underline; }
+
+    /* ── MAIN ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .empty-state {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px;
+      color: var(--muted);
+    }
+    .empty-icon { font-size: 48px; opacity: .3; }
+    .empty-state h3 { font-size: 16px; font-weight: 600; color: var(--muted); }
+    .empty-state p  { font-size: 13px; text-align: center; max-width: 320px; line-height: 1.6; }
+
+    .builder { flex: 1; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+
+    .builder-header {
+      padding: 14px 24px; background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .breadcrumb { font-size: 13px; color: var(--muted); }
+    .breadcrumb span { color: var(--text); font-weight: 600; }
+    .builder-actions { display: flex; gap: 8px; }
+
+    .builder-body { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── SECTIONS ── */
+    .fields-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+    }
+
+    .section-header {
+      padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-title {
+      display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700;
+    }
+    .section-title span { font-size: 11px; font-weight: 400; color: var(--muted); }
+    .section-badge {
+      font-size: 10px; padding: 2px 7px; border-radius: 99px; font-weight: 600;
+    }
+    .badge-locked  { background: rgba(139,148,158,.15); color: var(--muted); border: 1px solid var(--border); }
+    .badge-cat     { background: rgba(188,140,255,.12); color: var(--purple); border: 1px solid rgba(188,140,255,.3); }
+    .badge-mat     { background: rgba(63,185,80,.1);   color: var(--green);  border: 1px solid rgba(63,185,80,.3); }
+
+    .section-body { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+
+    /* ── FIELD CARDS ── */
+    .field-card {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; transition: border-color .15s;
+    }
+    .field-card:hover { border-color: #444c56; }
+    .field-card.dragging { opacity: .35; }
+
+    .drag-handle {
+      color: var(--muted); cursor: grab; font-size: 14px; margin-top: 1px;
+      flex-shrink: 0; padding: 2px;
+    }
+    .drag-handle:active { cursor: grabbing; }
+
+    .field-info { flex: 1; min-width: 0; }
+    .field-label { font-size: 13px; font-weight: 600; color: var(--text); }
+    .field-meta  { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+    .field-options { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    .type-badge {
+      font-size: 10px; padding: 2px 7px; border-radius: 99px; font-weight: 500;
+      background: var(--surface3); color: var(--muted); border: 1px solid var(--border);
+    }
+    .req-badge {
+      font-size: 10px; padding: 2px 7px; border-radius: 99px;
+      background: rgba(248,81,73,.1); color: var(--red); border: 1px solid rgba(248,81,73,.3);
+    }
+
+    .field-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .icon-btn {
+      background: none; border: none; cursor: pointer; color: var(--muted);
+      padding: 4px 6px; border-radius: 5px; font-size: 13px; transition: background .1s, color .1s;
+    }
+    .icon-btn:hover { background: var(--surface3); color: var(--text); }
+    .icon-btn.del:hover { color: var(--red); }
+
+    /* Common field cards (locked) */
+    .field-card.locked {
+      background: rgba(139,148,158,.06); border-style: dashed;
+    }
+    .field-card.locked .field-label { color: var(--muted); }
+
+    .add-field-row {
+      display: flex; justify-content: center; padding: 4px 0;
+    }
+    .add-field-btn {
+      background: none; border: 1px dashed var(--border); color: var(--muted);
+      font-size: 12px; padding: 6px 16px; border-radius: 6px; cursor: pointer;
+      font-family: inherit; transition: border-color .15s, color .15s;
+      width: 100%;
+    }
+    .add-field-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Drag placeholder */
+    .field-placeholder {
+      height: 40px; border: 2px dashed var(--accent); border-radius: 8px;
+      background: rgba(88,166,255,.05);
+    }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.6);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      width: 480px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+    .modal-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-header h3 { font-size: 15px; font-weight: 700; }
+    .modal-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+    .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .form-input, .form-select {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 7px;
+      color: var(--text); font-size: 13px; font-family: inherit;
+      padding: 8px 12px; outline: none; transition: border-color .15s;
+      width: 100%;
+    }
+    .form-input:focus, .form-select:focus { border-color: var(--accent); }
+    .form-select option { background: var(--surface2); }
+
+    .checkbox-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .checkbox-row input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+    .checkbox-row span { font-size: 13px; }
+
+    .options-list { display: flex; flex-direction: column; gap: 6px; }
+    .option-row { display: flex; gap: 6px; align-items: center; }
+    .option-row input { flex: 1; }
+    .option-del { background: none; border: none; color: var(--red); cursor: pointer; font-size: 16px; padding: 0 4px; }
+
+    .add-option-btn {
+      background: none; border: 1px dashed var(--border); color: var(--muted);
+      font-size: 12px; padding: 5px 12px; border-radius: 6px; cursor: pointer;
+      font-family: inherit; transition: border-color .15s, color .15s; align-self: flex-start;
+    }
+    .add-option-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 20px; right: 20px;
+      background: #1f6feb; color: #fff; font-size: 13px;
+      padding: 10px 18px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.4);
+      opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 200;
+    }
+    .toast.show { opacity: 1; }
+
+    /* ── SECTION GROUP (Especificaciones Técnicas wrapper) ── */
+    .section-group {
+      display: flex; flex-direction: column; gap: 12px;
+      border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+      background: rgba(139,148,158,.04);
+    }
+    .section-group-header {
+      display: flex; align-items: baseline; gap: 10px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border);
+    }
+    .section-group-title { font-size: 13px; font-weight: 700; }
+    .section-group-sub   { font-size: 11px; color: var(--muted); }
+
+    /* ── COSTOS TABLE ── */
+    .costos-preview { display: flex; flex-direction: column; gap: 10px; }
+    .costos-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .costos-table th {
+      text-align: left; padding: 8px 10px;
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .5px;
+      border-bottom: 1px solid var(--border); background: var(--surface3);
+    }
+    .costos-table th:last-child { width: 32px; }
+    .costos-table td {
+      padding: 5px 8px; border-bottom: 1px solid rgba(48,54,61,.5);
+      vertical-align: middle;
+    }
+    .table-input {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 5px;
+      color: var(--text); font-size: 12px; font-family: inherit;
+      padding: 5px 8px; width: 100%; outline: none; transition: border-color .15s;
+    }
+    .table-input:focus { border-color: var(--accent); }
+    .table-input::placeholder { color: var(--muted); opacity: .5; }
+    .precio-wrap { display: flex; align-items: center; gap: 5px; }
+    .precio-prefix { color: var(--muted); font-size: 11px; flex-shrink: 0; }
+    .auto-calc { color: var(--green); font-family: monospace; font-size: 12px; padding: 0 4px; }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .sb-status { font-size: 11px; transition: color .3s; padding: 0 4px; }
+
+    /* ── SIDEBAR OVERLAY (mobile) ── */
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55); z-index: 40;
+    }
+    .sidebar-overlay.open { display: block; }
+    .btn-menu { display: none; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      body { overflow: auto; height: auto; min-height: 100vh; }
+
+      /* Header */
+      .app-header { padding: 10px 14px; gap: 8px; flex-wrap: wrap; }
+      .app-header > div:first-child { flex: 1; min-width: 0; }
+      .app-header h1 { font-size: 14px; }
+      .app-header p  { display: none; }
+      .header-actions { gap: 6px; }
+      .header-actions .btn-secondary { display: none; }
+      .btn-menu { display: inline-flex; align-items: center; gap: 5px; }
+      .sb-status { font-size: 10px; }
+
+      /* Body */
+      .app-body { flex-direction: column; overflow: visible; height: auto; }
+
+      /* Sidebar → drawer */
+      .sidebar {
+        position: fixed; top: 0; left: 0; bottom: 0;
+        width: 280px; z-index: 50;
+        transform: translateX(-100%);
+        transition: transform .25s ease;
+      }
+      .sidebar.open { transform: translateX(0); }
+
+      /* Main */
+      .main { overflow: visible; }
+      .builder { overflow: visible; flex-shrink: unset; }
+
+      /* Builder header */
+      .builder-header { padding: 10px 14px; gap: 8px; flex-wrap: wrap; }
+      .breadcrumb { font-size: 11px; }
+      .builder-body { padding: 14px; gap: 14px; overflow: visible; }
+
+      /* Sections */
+      .section-group { padding: 12px; gap: 10px; }
+      .section-body  { padding: 10px 12px; }
+
+      /* Costos table → scroll */
+      .costos-preview { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .costos-table   { min-width: 480px; }
+
+      /* Field cards */
+      .field-card { flex-wrap: wrap; }
+      .field-actions { margin-left: auto; }
+
+      /* Modal */
+      .modal { width: 95vw; margin: 10px; }
+      .modal-body { padding: 14px; gap: 12px; }
+
+      /* Specs placeholder */
+      #specs-placeholder { font-size: 12px; padding: 16px; }
+    }
+
+    @media (max-width: 480px) {
+      .app-header h1 { font-size: 13px; }
+      .btn { font-size: 11px; padding: 5px 10px; }
+      .builder-body { padding: 10px; gap: 10px; }
+      .section-header { padding: 10px 12px; flex-wrap: wrap; gap: 6px; }
+      .section-title  { font-size: 12px; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div>
+    <h1>Constructor de Formularios Dinámicos</h1>
+    <p>Define los campos de cada tipo de material para el catálogo</p>
+  </div>
+  <div class="header-actions">
+    <span id="sb-status" class="sb-status" style="color:#8b949e">⬤ Conectando...</span>
+    <button class="btn btn-secondary btn-menu" onclick="toggleSidebar()">☰ Materiales</button>
+    <button class="btn btn-secondary" onclick="exportJSON()">↓ Exportar JSON</button>
+    <button class="btn btn-primary"   onclick="saveManual()">✓ Guardar</button>
+  </div>
+</header>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<div class="app-body">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h3>Taxonomía de Materiales</h3>
+      <p>Selecciona un tipo de material</p>
+    </div>
+    <div class="tree" id="tree"></div>
+    <div class="sidebar-footer">
+      <p class="import-note">
+        La taxonomía se carga desde <strong>categorias.html</strong>.<br>
+        <a onclick="reloadTaxonomy()">Recargar taxonomía</a> si hiciste cambios.
+      </p>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main" id="main">
+
+    <div class="builder" id="builder">
+      <div class="builder-header">
+        <div class="breadcrumb" id="breadcrumb">
+          <span style="color:var(--muted)">← Selecciona un tipo de material para definir sus campos</span>
+        </div>
+        <div class="builder-actions">
+          <button class="btn btn-secondary btn-sm" id="btn-preview" onclick="previewForm()" style="display:none">👁 Vista previa</button>
+        </div>
+      </div>
+      <div class="builder-body">
+
+        <!-- SECCIÓN 1: Información Básica (siempre visible) -->
+        <div class="fields-section">
+          <div class="section-header">
+            <div class="section-title">
+              📋 Información Básica
+              <span>· Presente en todos los materiales</span>
+            </div>
+            <span class="section-badge badge-locked">Fijo</span>
+          </div>
+          <div class="section-body" id="common-fields-body"></div>
+        </div>
+
+        <!-- SECCIÓN 2: Especificaciones Técnicas (requiere selección) -->
+        <div class="section-group" id="specs-group">
+          <div class="section-group-header">
+            <span class="section-group-title">⚙️ Especificaciones Técnicas</span>
+            <span class="section-group-sub" id="specs-sub">Selecciona un tipo de material en el panel izquierdo</span>
+          </div>
+
+          <div id="specs-placeholder" style="padding:20px;text-align:center;color:var(--muted);font-size:12px">
+            ← Elige una categoría y un tipo de material para definir sus campos específicos
+          </div>
+
+          <div id="specs-content" style="display:none;flex-direction:column;gap:12px">
+            <!-- Campos de categoría -->
+            <div class="fields-section">
+              <div class="section-header">
+                <div class="section-title">
+                  Campos de categoría
+                  <span id="cat-section-name">· —</span>
+                </div>
+                <span class="section-badge badge-cat">Compartidos</span>
+              </div>
+              <div class="section-body" id="cat-fields-body"></div>
+              <div style="padding: 0 16px 14px">
+                <button class="add-field-btn" onclick="openModal('category')">+ Agregar campo de categoría</button>
+              </div>
+            </div>
+
+            <!-- Campos específicos del material -->
+            <div class="fields-section">
+              <div class="section-header">
+                <div class="section-title">
+                  Campos del tipo de material
+                  <span id="mat-section-name">· —</span>
+                </div>
+                <span class="section-badge badge-mat">Exclusivos</span>
+              </div>
+              <div class="section-body" id="mat-fields-body"></div>
+              <div style="padding: 0 16px 14px">
+                <button class="add-field-btn" onclick="openModal('material')">+ Agregar campo específico</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 3: Costos (siempre visible) -->
+        <div class="fields-section">
+          <div class="section-header">
+            <div class="section-title">
+              💰 Costos
+              <span>· Escala de precios y tiempos de entrega</span>
+            </div>
+            <span class="section-badge badge-locked">Igual para todos</span>
+          </div>
+          <div class="section-body">
+            <div class="costos-preview">
+              <table class="costos-table">
+                <thead>
+                  <tr>
+                    <th>Cantidad</th>
+                    <th>Precio unitario (USD)</th>
+                    <th>Precio Total (USD)</th>
+                    <th>Días de entrega</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="costos-tbody"></tbody>
+              </table>
+              <button class="add-field-btn" onclick="addCostosRow()" style="margin-top:6px">+ Agregar tramo</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Nuevo campo</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Etiqueta del campo</label>
+        <input class="form-input" id="field-label" placeholder="Ej: Tipo de corte" oninput="autoKey()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Clave interna (auto)</label>
+        <input class="form-input" id="field-key" placeholder="tipo_corte" style="font-family:monospace;font-size:12px">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo de campo</label>
+        <select class="form-select" id="field-type" onchange="onTypeChange()">
+          <option value="text">Texto libre</option>
+          <option value="textarea">Texto largo</option>
+          <option value="number">Número</option>
+          <option value="select">Selección única</option>
+          <option value="multiselect">Selección múltiple</option>
+          <option value="boolean">Sí / No</option>
+          <option value="dimensions">Dimensiones (A × H)</option>
+          <option value="color_picker">Colores disponibles</option>
+        </select>
+      </div>
+      <label class="checkbox-row">
+        <input type="checkbox" id="field-required" checked>
+        <span>Campo requerido</span>
+      </label>
+      <div class="form-group" id="options-group" style="display:none">
+        <label class="form-label">Opciones</label>
+        <div class="options-list" id="options-list"></div>
+        <button class="add-option-btn" onclick="addOption()">+ Agregar opción</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="submitField()">Guardar campo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── CONSTANTS ──────────────────────────────────────────────────────────────
+  const CAT_KEY   = 'catalogo-categorias-v2';
+  const FORMS_KEY = 'catalogo-forms-v1';
+  const DB = supabase.createClient(
+    'https://ciegpgxrprrzfcmcjndj.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpZWdwZ3hycHJyemZjbWNqbmRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1OTM5NjQsImV4cCI6MjA5NDE2OTk2NH0.BdM93k9SMQ61IWS38PIF5OVctrt1t80PQqows5ub-P0'
+  );
+
+  const COMMON_FIELDS = [
+    { label: 'Nombre del producto',   type: 'text',     required: true },
+    { label: 'Descripción',           type: 'textarea', required: true },
+    { label: 'Imágenes del producto', type: 'images',   required: true },
+    { label: 'Vigencia de la propuesta', type: 'select', required: true,
+      options: ['1 mes', '2 meses', '3 meses', '6 meses', '12 meses'] },
+  ];
+
+  const TYPE_LABELS = {
+    text: 'Texto libre', textarea: 'Texto largo', number: 'Número',
+    select: 'Selección única', multiselect: 'Selección múltiple',
+    boolean: 'Sí / No', dimensions: 'Dimensiones', color_picker: 'Colores',
+    images: 'Imágenes', scale: 'Escala de precios',
+  };
+
+  const CAT_COLORS = {
+    'cat-textil':'#4338ca','cat-bolsos':'#c2410c','cat-impresos':'#15803d',
+    'cat-exhibicion':'#b91c1c','cat-eventos':'#9d174d','cat-tech':'#1d4ed8',
+    'cat-electro':'#0f766e','cat-hogar':'#92400e','cat-deportivos':'#065f46',
+    'cat-misc':'#374151',
+  };
+
+  // ── STATE ──────────────────────────────────────────────────────────────────
+  let taxonomy = [];
+  let formDefs = { categoryFields: {}, materialFields: {}, costosRows: [] };
+  let selected = { category: null, subcategory: null, material: null };
+  let modalCtx = { scope: null, editIdx: null };
+  let costosRows = [];
+
+  // Drag state
+  let dragCard = null, dragPlaceholder = null;
+
+  // ── INIT ───────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', async () => {
+    setStatus('connecting');
+    taxonomy = await loadTaxonomy();
+    formDefs  = await loadFormDefs();
+    costosRows = formDefs.costosRows || [{ cantidad: '', precio: '', dias: '' }];
+    renderTree();
+    renderCommonFields();
+    renderCostosRows();
+    setStatus('online');
+  });
+
+  // ── SUPABASE ───────────────────────────────────────────────────────────────
+  function setStatus(s) {
+    const el = document.getElementById('sb-status');
+    if (!el) return;
+    const map = {
+      connecting: ['⬤ Conectando...',  '#8b949e'],
+      online:     ['⬤ Sincronizado',   '#3fb950'],
+      saving:     ['⬤ Guardando...',   '#d29922'],
+      saved:      ['⬤ Guardado',       '#3fb950'],
+      offline:    ['⬤ Sin conexión',   '#f85149'],
+    };
+    const [text, color] = map[s] || map.offline;
+    el.textContent = text; el.style.color = color;
+  }
+
+  async function pushFormsToSupabase() {
+    setStatus('saving');
+    try {
+      await DB.from('app_state').upsert({ key: 'forms', value: formDefs, updated_at: new Date().toISOString() });
+      setStatus('saved');
+    } catch(e) { setStatus('offline'); }
+  }
+
+  // ── TAXONOMY ───────────────────────────────────────────────────────────────
+  async function loadTaxonomy() {
+    try {
+      const { data, error } = await DB.from('app_state').select('value').eq('key', 'taxonomy').single();
+      if (!error && data && Array.isArray(data.value) && data.value.length > 0) {
+        localStorage.setItem(CAT_KEY, JSON.stringify(data.value));
+        return data.value;
+      }
+    } catch(e) {}
+    try {
+      const raw = localStorage.getItem(CAT_KEY);
+      if (raw) { const d = JSON.parse(raw); if (Array.isArray(d) && d.length > 0) return d; }
+    } catch(e) {}
+    return getDefaultTaxonomy();
+  }
+
+  async function reloadTaxonomy() {
+    taxonomy = await loadTaxonomy();
+    renderTree();
+    showToast('Taxonomía recargada');
+  }
+
+  function renderTree() {
+    const tree = document.getElementById('tree');
+    tree.innerHTML = '';
+    taxonomy.forEach(cat => {
+      if (cat.name === '') return;
+      const color = CAT_COLORS[cat.catClass] || cat.customColor || '#58a6ff';
+      const catEl = document.createElement('div');
+      catEl.className = 'tree-cat';
+      catEl.dataset.cat = cat.name;
+
+      const labelEl = document.createElement('div');
+      labelEl.className = 'tree-cat-label';
+      labelEl.innerHTML = `
+        <span class="tree-arrow open">▶</span>
+        <span class="cat-dot" style="background:${color}"></span>
+        <span>${cat.name}</span>
+      `;
+      labelEl.onclick = () => toggleCat(catEl, labelEl);
+      catEl.appendChild(labelEl);
+
+      const subcatsEl = document.createElement('div');
+      subcatsEl.className = 'tree-subcat';
+
+      (cat.subcategories || []).forEach(sub => {
+        if (!sub.items || sub.items.length === 0) return;
+        const subEl = document.createElement('div');
+
+        const subLabel = document.createElement('div');
+        subLabel.className = 'tree-subcat-label';
+        subLabel.innerHTML = `<span class="tree-arrow open">▶</span><span>${sub.name}</span>`;
+        subLabel.onclick = () => toggleSubcat(subEl, subLabel);
+        subEl.appendChild(subLabel);
+
+        const itemsEl = document.createElement('div');
+        itemsEl.className = 'tree-items';
+        (sub.items || []).forEach(item => {
+          const itemEl = document.createElement('div');
+          itemEl.className = 'tree-item' + (item.dup ? ' dup' : '');
+          itemEl.textContent = item.text + (item.dup ? ' ⚑' : '');
+          itemEl.dataset.cat  = cat.name;
+          itemEl.dataset.sub  = sub.name;
+          itemEl.dataset.mat  = item.text;
+          itemEl.onclick = () => selectMaterial(cat, sub, item, itemEl);
+          itemsEl.appendChild(itemEl);
+        });
+
+        subEl.appendChild(itemsEl);
+        subcatsEl.appendChild(subEl);
+      });
+
+      catEl.appendChild(subcatsEl);
+      tree.appendChild(catEl);
+    });
+  }
+
+  function toggleCat(catEl, labelEl) {
+    const arrow = labelEl.querySelector('.tree-arrow');
+    const sub   = catEl.querySelector('.tree-subcat');
+    const open  = arrow.classList.toggle('open');
+    sub.style.display = open ? '' : 'none';
+  }
+
+  function toggleSubcat(subEl, subLabel) {
+    const arrow = subLabel.querySelector('.tree-arrow');
+    const items = subEl.querySelector('.tree-items');
+    const open  = arrow.classList.toggle('open');
+    items.style.display = open ? '' : 'none';
+  }
+
+  function selectMaterial(cat, sub, item, el) {
+    document.querySelectorAll('.tree-item').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    selected = { category: cat.name, subcategory: sub.name, material: item.text };
+    renderBuilder();
+    if (window.innerWidth <= 768) closeSidebar();
+  }
+
+  // ── BUILDER ────────────────────────────────────────────────────────────────
+  function renderBuilder() {
+    const { category, subcategory, material } = selected;
+
+    document.getElementById('breadcrumb').innerHTML =
+      `${category} &rsaquo; ${subcategory} &rsaquo; <span>${material}</span>`;
+    document.getElementById('cat-section-name').textContent = `· ${category}`;
+    document.getElementById('mat-section-name').textContent = `· ${material}`;
+    document.getElementById('specs-sub').textContent =
+      'Define los campos que el proveedor debe completar para este tipo de material';
+    document.getElementById('specs-placeholder').style.display = 'none';
+    const sc = document.getElementById('specs-content');
+    sc.style.display = 'flex';
+    document.getElementById('btn-preview').style.display = 'inline-flex';
+
+    renderCategoryFields();
+    renderMaterialFields();
+  }
+
+  function renderCommonFields() {
+    const body = document.getElementById('common-fields-body');
+    body.innerHTML = '';
+    COMMON_FIELDS.forEach(f => {
+      body.appendChild(makeFieldCard(f, true, null, null));
+    });
+  }
+
+  function renderCategoryFields() {
+    const body = document.getElementById('cat-fields-body');
+    body.innerHTML = '';
+    const fields = formDefs.categoryFields[selected.category] || [];
+    fields.forEach((f, i) => body.appendChild(makeFieldCard(f, false, 'category', i)));
+    if (fields.length === 0) {
+      body.innerHTML = '<p style="font-size:12px;color:var(--muted);padding:4px 0">Sin campos de categoría definidos aún.</p>';
+    }
+  }
+
+  function renderMaterialFields() {
+    const body = document.getElementById('mat-fields-body');
+    body.innerHTML = '';
+    const key    = matKey();
+    const fields = formDefs.materialFields[key] || [];
+    fields.forEach((f, i) => body.appendChild(makeFieldCard(f, false, 'material', i)));
+    if (fields.length === 0) {
+      body.innerHTML = '<p style="font-size:12px;color:var(--muted);padding:4px 0">Sin campos específicos definidos aún.</p>';
+    }
+  }
+
+  function makeFieldCard(field, locked, scope, idx) {
+    const card = document.createElement('div');
+    card.className = 'field-card' + (locked ? ' locked' : '');
+    if (!locked) { card.draggable = true; bindCardDrag(card, scope, idx); }
+
+    const options = field.options?.length
+      ? `<div class="field-options">Opciones: ${field.options.join(' · ')}</div>` : '';
+
+    card.innerHTML = `
+      <span class="drag-handle">${locked ? '🔒' : '⠿'}</span>
+      <div class="field-info">
+        <div class="field-label">${field.label}</div>
+        <div class="field-meta">
+          <span class="type-badge">${TYPE_LABELS[field.type] || field.type}</span>
+          ${field.required ? '<span class="req-badge">Requerido</span>' : ''}
+        </div>
+        ${options}
+      </div>
+      ${!locked ? `
+      <div class="field-actions">
+        <button class="icon-btn" title="Editar" onclick="editField('${scope}',${idx})">✏️</button>
+        <button class="icon-btn del" title="Eliminar" onclick="deleteField('${scope}',${idx})">×</button>
+      </div>` : ''}
+    `;
+    return card;
+  }
+
+  // ── DRAG REORDER ───────────────────────────────────────────────────────────
+  function bindCardDrag(card, scope, idx) {
+    card.addEventListener('dragstart', e => {
+      dragCard = { scope, idx };
+      card.classList.add('dragging');
+      dragPlaceholder = document.createElement('div');
+      dragPlaceholder.className = 'field-placeholder';
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      dragPlaceholder?.remove();
+      dragCard = null; dragPlaceholder = null;
+    });
+  }
+
+  ['cat-fields-body','mat-fields-body'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('dragover', e => {
+      e.preventDefault();
+      const after = getDragAfter(el, e.clientY);
+      after ? el.insertBefore(dragPlaceholder, after) : el.appendChild(dragPlaceholder);
+    });
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragCard) return;
+      const scope  = id === 'cat-fields-body' ? 'category' : 'material';
+      const fields = getFields(dragCard.scope);
+      const [moved] = fields.splice(dragCard.idx, 1);
+      const cards   = [...el.querySelectorAll('.field-card:not(.dragging)')];
+      const afterEl = getDragAfter(el, e.clientY);
+      const newIdx  = afterEl ? cards.indexOf(afterEl) : cards.length;
+      getFields(dragCard.scope).splice(newIdx, 0, moved);
+      saveState();
+      dragCard.scope === 'category' ? renderCategoryFields() : renderMaterialFields();
+    });
+  });
+
+  function getDragAfter(container, y) {
+    return [...container.querySelectorAll('.field-card:not(.dragging)')].find(c => {
+      const box = c.getBoundingClientRect();
+      return y < box.top + box.height / 2;
+    }) || null;
+  }
+
+  // ── MODAL ──────────────────────────────────────────────────────────────────
+  function openModal(scope, editIdx = null) {
+    modalCtx = { scope, editIdx };
+    const isEdit = editIdx !== null;
+    document.getElementById('modal-title').textContent = isEdit ? 'Editar campo' : 'Nuevo campo';
+
+    const field = isEdit ? getFields(scope)[editIdx] : null;
+    document.getElementById('field-label').value    = field?.label    || '';
+    document.getElementById('field-key').value      = field?.key      || '';
+    document.getElementById('field-type').value     = field?.type     || 'text';
+    document.getElementById('field-required').checked = field ? field.required : true;
+
+    renderOptions(field?.options || []);
+    onTypeChange();
+
+    document.getElementById('modal-overlay').classList.add('open');
+    document.getElementById('field-label').focus();
+  }
+
+  function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+  function closeModalOnBg(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
+
+  function onTypeChange() {
+    const type = document.getElementById('field-type').value;
+    const show  = ['select','multiselect'].includes(type);
+    document.getElementById('options-group').style.display = show ? 'block' : 'none';
+  }
+
+  function autoKey() {
+    const label = document.getElementById('field-label').value;
+    document.getElementById('field-key').value = label
+      .toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+  }
+
+  function renderOptions(opts) {
+    const list = document.getElementById('options-list');
+    list.innerHTML = '';
+    opts.forEach((opt, i) => {
+      const row = document.createElement('div');
+      row.className = 'option-row';
+      row.innerHTML = `
+        <input class="form-input" value="${opt}" placeholder="Opción ${i+1}" style="font-size:12px">
+        <button class="option-del" onclick="removeOption(this)">×</button>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  function addOption() {
+    const list = document.getElementById('options-list');
+    const row = document.createElement('div');
+    row.className = 'option-row';
+    const n = list.children.length + 1;
+    row.innerHTML = `
+      <input class="form-input" placeholder="Opción ${n}" style="font-size:12px">
+      <button class="option-del" onclick="removeOption(this)">×</button>
+    `;
+    list.appendChild(row);
+    row.querySelector('input').focus();
+  }
+
+  function removeOption(btn) { btn.closest('.option-row').remove(); }
+
+  function submitField() {
+    const label    = document.getElementById('field-label').value.trim();
+    const key      = document.getElementById('field-key').value.trim();
+    const type     = document.getElementById('field-type').value;
+    const required = document.getElementById('field-required').checked;
+
+    if (!label) { showToast('⚠ La etiqueta es requerida'); return; }
+
+    const options = ['select','multiselect'].includes(type)
+      ? [...document.querySelectorAll('#options-list .option-row input')]
+          .map(i => i.value.trim()).filter(Boolean)
+      : [];
+
+    const field = { label, key: key || label.toLowerCase().replace(/\s+/g,'_'), type, required, options };
+    const fields = getFields(modalCtx.scope);
+
+    if (modalCtx.editIdx !== null) {
+      fields[modalCtx.editIdx] = field;
+    } else {
+      fields.push(field);
+    }
+
+    setFields(modalCtx.scope, fields);
+    saveState();
+    closeModal();
+
+    if (modalCtx.scope === 'category') renderCategoryFields();
+    else renderMaterialFields();
+
+    showToast(modalCtx.editIdx !== null ? 'Campo actualizado' : `"${label}" agregado`);
+  }
+
+  function editField(scope, idx) { openModal(scope, idx); }
+
+  function deleteField(scope, idx) {
+    const fields = getFields(scope);
+    const name = fields[idx].label;
+    if (!confirm(`¿Eliminar el campo "${name}"?`)) return;
+    fields.splice(idx, 1);
+    setFields(scope, fields);
+    saveState();
+    scope === 'category' ? renderCategoryFields() : renderMaterialFields();
+    showToast(`"${name}" eliminado`);
+  }
+
+  // ── FIELD HELPERS ──────────────────────────────────────────────────────────
+  function matKey() {
+    const { category, subcategory, material } = selected;
+    return `${category}.${subcategory}.${material}`;
+  }
+
+  function getFields(scope) {
+    if (scope === 'category') {
+      formDefs.categoryFields[selected.category] = formDefs.categoryFields[selected.category] || [];
+      return formDefs.categoryFields[selected.category];
+    }
+    const k = matKey();
+    formDefs.materialFields[k] = formDefs.materialFields[k] || [];
+    return formDefs.materialFields[k];
+  }
+
+  function setFields(scope, fields) {
+    if (scope === 'category') formDefs.categoryFields[selected.category] = fields;
+    else formDefs.materialFields[matKey()] = fields;
+  }
+
+  // ── PREVIEW ────────────────────────────────────────────────────────────────
+  function previewForm() {
+    const { category, subcategory, material } = selected;
+    const catFields  = formDefs.categoryFields[category] || [];
+    const matFields  = formDefs.materialFields[matKey()]  || [];
+    const techTotal  = catFields.length + matFields.length;
+    const reqTech    = [...catFields, ...matFields].filter(f => f.required).length;
+    alert(
+      `Vista previa — ${material}\n` +
+      `${category} › ${subcategory}\n` +
+      `${'─'.repeat(40)}\n\n` +
+      `📋 INFORMACIÓN BÁSICA (${COMMON_FIELDS.length} campos — fijos)\n` +
+      COMMON_FIELDS.map(f => `   • ${f.label}`).join('\n') + '\n\n' +
+      `⚙️ ESPECIFICACIONES TÉCNICAS (${techTotal} campos)\n` +
+      `   Categoría "${category}" (${catFields.length}): ` + (catFields.length ? catFields.map(f=>f.label).join(', ') : 'sin campos') + '\n' +
+      `   Material "${material}" (${matFields.length}): ` + (matFields.length ? matFields.map(f=>f.label).join(', ') : 'sin campos') + '\n\n' +
+      `💰 COSTOS — Escala de precios y tiempos (fijo)\n` +
+      `   Cantidad / Precio unitario / Precio Total / Días de entrega\n\n` +
+      `─── Campos requeridos en Especificaciones: ${reqTech} de ${techTotal}`
+    );
+  }
+
+  // ── PERSISTENCE ────────────────────────────────────────────────────────────
+  function saveState() {
+    localStorage.setItem(FORMS_KEY, JSON.stringify(formDefs));
+    pushFormsToSupabase();
+  }
+
+  async function loadFormDefs() {
+    try {
+      const { data, error } = await DB.from('app_state').select('value').eq('key', 'forms').single();
+      if (!error && data) {
+        localStorage.setItem(FORMS_KEY, JSON.stringify(data.value));
+        return data.value;
+      }
+    } catch(e) {}
+    try {
+      const raw = localStorage.getItem(FORMS_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return { categoryFields: {}, materialFields: {}, costosRows: [] };
+  }
+
+  function saveManual() { saveState(); showToast('Guardado ✓'); }
+
+  function exportJSON() {
+    const data = {
+      exportedAt: new Date().toISOString(),
+      categoryFields: formDefs.categoryFields,
+      materialFields: formDefs.materialFields,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `formularios-catalogo-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    showToast('JSON exportado ✓');
+  }
+
+  // ── COSTOS ─────────────────────────────────────────────────────────────────
+  function renderCostosRows() {
+    const tbody = document.getElementById('costos-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    costosRows.forEach((row, i) => {
+      const isLast = i === costosRows.length - 1;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <div style="display:flex;align-items:center;gap:4px">
+            <input class="table-input" value="${row.cantidad}" placeholder="Ej: 50"
+              oninput="updateCostos(${i},'cantidad',this.value)">
+          </div>
+        </td>
+        <td>
+          <div class="precio-wrap">
+            <span class="precio-prefix">$</span>
+            <input class="table-input" value="${row.precio}" placeholder="0.00"
+              oninput="updateCostos(${i},'precio',this.value)">
+          </div>
+        </td>
+        <td class="auto-calc" id="total-${i}">${calcTotal(row.cantidad, row.precio)}</td>
+        <td>
+          <input class="table-input" value="${row.dias}" placeholder="Ej: 15"
+            oninput="updateCostos(${i},'dias',this.value)">
+        </td>
+        <td>
+          <button class="icon-btn del" onclick="deleteCostosRow(${i})"
+            ${costosRows.length === 1 ? 'disabled style="opacity:.3;cursor:default"' : ''}>×</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function calcTotal(cantidad, precio) {
+    const c = parseFloat(String(cantidad).replace(/[^0-9.]/g, ''));
+    const p = parseFloat(String(precio).replace(/[^0-9.]/g, ''));
+    if (isNaN(c) || isNaN(p) || c === 0 || p === 0) return '—';
+    return '$ ' + (c * p).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function addCostosRow() {
+    costosRows.push({ cantidad: '', precio: '', dias: '' });
+    renderCostosRows();
+    saveCostosState();
+  }
+
+  function deleteCostosRow(idx) {
+    if (costosRows.length === 1) return;
+    costosRows.splice(idx, 1);
+    renderCostosRows();
+    saveCostosState();
+  }
+
+  function updateCostos(idx, field, value) {
+    costosRows[idx][field] = value;
+    const cell = document.getElementById(`total-${idx}`);
+    if (cell) cell.textContent = calcTotal(costosRows[idx].cantidad, costosRows[idx].precio);
+    saveCostosState();
+  }
+
+  function saveCostosState() {
+    formDefs.costosRows = costosRows;
+    saveState();
+  }
+
+  // ── SIDEBAR MOBILE ─────────────────────────────────────────────────────────
+  function toggleSidebar() {
+    const sb = document.querySelector('.sidebar');
+    const ov = document.getElementById('sidebar-overlay');
+    const open = sb.classList.toggle('open');
+    ov.classList.toggle('open', open);
+  }
+  function closeSidebar() {
+    document.querySelector('.sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+  }
+
+  // ── TOAST ──────────────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ── DEFAULT TAXONOMY ───────────────────────────────────────────────────────
+  function getDefaultTaxonomy() {
+    return [
+      { name:'Textil', catClass:'cat-textil', customColor:'', isPending:false, subcategories:[
+        { name:'Ropa', zoneId:'textil-ropa', items:[{text:'Camisetas'},{text:'Franelas'},{text:'Camisas'},{text:'Camisas UV'},{text:'Chemises'},{text:'Guayaberas'},{text:'Chalecos'},{text:'Chaquetas'},{text:'Cortavientos'},{text:'Crewneck'},{text:'Croptops'},{text:'Hoodies'},{text:'Suéter'},{text:'Tops'},{text:'Vestidos'},{text:'Faldas'},{text:'Pantalones'},{text:'Shorts'},{text:'Pijamas'}] },
+        { name:'Calzado y Accesorios', zoneId:'textil-calzado', items:[{text:'Zapatos'},{text:'Pantunflas'},{text:'Correas'},{text:'Medias'},{text:'Gorras'},{text:'Viseras'},{text:'Sombreros'},{text:'Buckethats'},{text:'Pañoletas'},{text:'Bandanas'},{text:'Tocados'}] },
+        { name:'Uniformes y Trabajo', zoneId:'textil-uniformes', items:[{text:'Uniformes Promotoras'},{text:'Delantales'},{text:'Batas tobero'},{text:'Petos'},{text:'Antifaz'},{text:'Baberos'}] },
+        { name:'Hogar Textil', zoneId:'textil-hogar', items:[{text:'Cobijas'},{text:'Toallas'},{text:'Manteles'},{text:'Paños de cocina'},{text:'Pañitos de cocina'},{text:'Pareo'},{text:'Ponchos'},{text:'Ruanas'}] },
+      ]},
+      { name:'Bolsos', catClass:'cat-bolsos', customColor:'', isPending:false, subcategories:[
+        { name:'Todos los tipos', zoneId:'bolsos-todos', items:[{text:'Billeteras'},{text:'Bolsos'},{text:'Carteras'},{text:'Drybags'},{text:'Estuches'},{text:'Maletas'},{text:'Monederos'},{text:'Morrales'},{text:'Neceser'},{text:'Portalaptos'},{text:'Taqueras'},{text:'Totebags'},{text:'Tulas'},{text:'Bolsas ecológicas'}] },
+      ]},
+      { name:'Impresos', catClass:'cat-impresos', customColor:'', isPending:false, subcategories:[
+        { name:'Papelería y Editorial', zoneId:'impresos-papeleria', items:[{text:'Afiches'},{text:'Volantes'},{text:'Folletos'},{text:'Trípticos'},{text:'Dípticos'},{text:'Calendarios'},{text:'Agendas'},{text:'Cuadernos'},{text:'Blocs'},{text:'Food planners'},{text:'Recetarios'},{text:'Revistas'},{text:'Diplomas'},{text:'Menú'},{text:'Carpetas'}] },
+        { name:'POP Impreso', zoneId:'impresos-pop', items:[{text:'Habladores'},{text:'Colgantes'},{text:'Danglers'},{text:'Tendcards'},{text:'Toppers'},{text:'Collarines'},{text:'Stickers'},{text:'Calcomanías'},{text:'Tattoo'},{text:'Brazaletes'},{text:'Post-It'},{text:'Banderines de Papel'},{text:'Abanicos de Papel'},{text:'Pendones'},{text:'Tacos'},{text:'Cubo anaquel'},{text:'Rompetráficos',dup:true}] },
+        { name:'Empaques', zoneId:'impresos-empaques', items:[{text:'Bolsas'},{text:'Bolsas de papel'},{text:'Bolsas plásticas'},{text:'Cajas'},{text:'Etiquetas'},{text:'Blisters'},{text:'Papel de regalo'},{text:'Papel encerado'},{text:'Cintas adhesivas'},{text:'Papel bobina'},{text:'Servilletas',dup:true}] },
+        { name:'Otros Impresos', zoneId:'impresos-otros', items:[{text:'Cupones'},{text:'Secantes'},{text:'Individuales'},{text:'Preciador'},{text:'Talonarios'},{text:'Tarjetas'},{text:'Portaconos'},{text:'Buzones'},{text:'Rompecabezas',dup:true}] },
+      ]},
+      { name:'Exhibición', catClass:'cat-exhibicion', customColor:'', isPending:false, subcategories:[
+        { name:'Exhibidores', zoneId:'exhibicion-exhibidores', items:[{text:'Exhibidores de Piso'},{text:'Exhibidores de Lego'},{text:'Glorificadores'},{text:'Bandejas Armatorres'},{text:'Puntas de Gondolas'},{text:'Checkout'},{text:'Parrilleras',dup:true},{text:'Pitilleros'},{text:'Servilleteros'},{text:'Islas'}] },
+        { name:'Señalización POP', zoneId:'exhibicion-senalizacion', items:[{text:'Cenefas'},{text:'Flangers'},{text:'Microperforados'},{text:'Pizarras de Precios'},{text:'Capuchones'},{text:'Ristras'},{text:'Avisos de carritos'},{text:'Avisos luminosos'},{text:'Rompetráficos',dup:true}] },
+        { name:'Estructuras y Display', zoneId:'exhibicion-estructuras', items:[{text:'Backing'},{text:'Podium'},{text:'Corpóreos'},{text:'Standee'},{text:'Marcos delimitadores'},{text:'Banderas'},{text:'Banderines'},{text:'Ruletas'},{text:'Rompecabezas',dup:true},{text:'Dados',dup:true}] },
+      ]},
+      { name:'Eventos y Recreación', catClass:'cat-eventos', customColor:'', isPending:false, subcategories:[
+        { name:'Estructuras', zoneId:'eventos-estructuras', items:[{text:'Arcos'},{text:'Barras Truss'},{text:'Carpas'},{text:'Toldos'},{text:'Stands'},{text:'Kioskos'},{text:'Igloo'}] },
+        { name:'Mobiliario', zoneId:'eventos-mobiliario', items:[{text:'Mesas'},{text:'Sillas'},{text:'Barras'},{text:'Barras degustación'},{text:'Photobooth'},{text:'Sombrillas'}] },
+        { name:'Inflables y Activaciones', zoneId:'eventos-inflables', items:[{text:'Inflables interactivos'},{text:'Réplicas inflables'},{text:'Ciclones'},{text:'Globos'},{text:'Mascotas interactivas'},{text:'Grama artificial'}] },
+        { name:'Premios y Reconocimientos', zoneId:'eventos-premios', items:[{text:'Medallas'},{text:'Trofeos'},{text:'Placas de reconocimiento'}] },
+        { name:'Varios Evento', zoneId:'eventos-varios', items:[{text:'Flybanners'},{text:'Thunder sticks'},{text:'Barriles'},{text:'Escurridores'},{text:'Juegos'},{text:'Ventiladores holográficos'}] },
+      ]},
+      { name:'Tecnología y Electrónica', catClass:'cat-tech', customColor:'', isPending:false, subcategories:[
+        { name:'Todos los tipos', zoneId:'tech-todos', items:[{text:'Audífonos'},{text:'Cables'},{text:'Cámaras'},{text:'Celular'},{text:'Cónsolas'},{text:'Cornetas'},{text:'Laptop'},{text:'Micrófonos'},{text:'Mouse'},{text:'Pendrive'},{text:'Reloj inteligente'},{text:'Tablets'},{text:'Tarjetas NFC'},{text:'Teclados'},{text:'Trípode'}] },
+      ]},
+      { name:'Electrodomésticos', catClass:'cat-electro', customColor:'', isPending:false, subcategories:[
+        { name:'Todos los tipos', zoneId:'electro-todos', items:[{text:'Aires Acondicionados'},{text:'Asistentes de cocina'},{text:'Bases de TV'},{text:'Batidoras'},{text:'Cafeteras'},{text:'Congelador'},{text:'Cotuferas'},{text:'Freidoras de aire'},{text:'Grecas'},{text:'Hornos'},{text:'Licuadoras'},{text:'Microondas'},{text:'Neveras'},{text:'Televisores'},{text:'Ventiladores'}] },
+      ]},
+      { name:'Hogar', catClass:'cat-hogar', customColor:'', isPending:false, subcategories:[
+        { name:'Cocina y Preparación', zoneId:'hogar-cocina', items:[{text:'Areperas'},{text:'Budare'},{text:'Empanadera'},{text:'Ollas'},{text:'Sartenes'},{text:'Sanducheras'},{text:'Coladores'},{text:'Artículos de cocina'},{text:'Cubiertos'},{text:'Platos'},{text:'Parrilleras',dup:true}] },
+        { name:'Bebidas', zoneId:'hogar-bebidas', items:[{text:'Botellas'},{text:'Mugs'},{text:'Tazas'},{text:'Vasos'},{text:'Termos'},{text:'Shakers'},{text:'Jarras'},{text:'Jarras apilables'},{text:'Pitillos'},{text:'Destapadores'},{text:'Hieleras'},{text:'Cavas'},{text:'Bowls'},{text:'Envases'},{text:'Envases de lata'}] },
+        { name:'Mascotas', zoneId:'hogar-mascotas', items:[{text:'Palas para mascotas'},{text:'Platos de perro'}] },
+        { name:'Hogar General', zoneId:'hogar-general', items:[{text:'Cepillo'},{text:'Cestas de mercado'},{text:'Cestas ropa'},{text:'Cojin'},{text:'Cuerda tendedero'},{text:'Dispensador de jabón'},{text:'Espejos'},{text:'Ganchos de ropa'},{text:'Pinzas de ropa'},{text:'Servilletas',dup:true}] },
+      ]},
+      { name:'Deportivos', catClass:'cat-deportivos', customColor:'', isPending:false, subcategories:[
+        { name:'Todos los tipos', zoneId:'deportivos-todos', items:[{text:'Balones'},{text:'Bates'},{text:'Bicicletas'},{text:'Bolas Criollas'},{text:'Cascos Beisbol'},{text:'Domino'},{text:'Guantes Beisbol'},{text:'Lentes',dup:true},{text:'Mangas'},{text:'Mat de Yoga'},{text:'Pelotas Beisbol'},{text:'Pelotas de Goma'},{text:'Pelotas Futbol'},{text:'Pelotas Softball'},{text:'Raquetas'}] },
+      ]},
+      { name:'Misceláneos', catClass:'cat-misc', customColor:'', isPending:true, subcategories:[
+        { name:'Sin subcategorizar', zoneId:'misc-todos', items:[{text:'Abanicos'},{text:'Bolígrafos'},{text:'Bolsas de perros'},{text:'Bubble head'},{text:'Carrito plegable'},{text:'Cintas'},{text:'Cocteleras'},{text:'Collares'},{text:'Colores'},{text:'Dedos de espuma'},{text:'Imanes'},{text:'Impermeables'},{text:'Insignias'},{text:'Lanyards'},{text:'Lentes',dup:true},{text:'Llaveros'},{text:'Marcadores'},{text:'MiniLanyard'},{text:'Mousepad'},{text:'Paraguas'},{text:'Pecheras'},{text:'Peluches'},{text:'Pines'},{text:'Popsockets'},{text:'Pulseras'},{text:'Relojes'},{text:'Servilletas',dup:true},{text:'Yoyos'}] },
+      ]},
+    ];
+  }
+</script>
+</body>
+</html>
