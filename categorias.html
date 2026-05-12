@@ -347,6 +347,38 @@
 
     footer { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 16px; }
     .sb-status { font-size: 11px; transition: color .3s; padding: 0 4px; }
+
+    /* ── DELETE CATEGORY ── */
+    .cat-del-btn {
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,.5); font-size: 17px; line-height: 1;
+      padding: 2px 5px; border-radius: 4px;
+      opacity: 0; transition: opacity .15s, color .15s;
+      flex-shrink: 0;
+    }
+    .card-header:hover .cat-del-btn { opacity: 1; }
+    .cat-del-btn:hover { color: #fff; background: rgba(255,255,255,.15); }
+
+    /* ── DELETE SUBCATEGORY ── */
+    .subcat-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px; padding-bottom: 5px;
+      border-bottom: 1px solid color-mix(in srgb, var(--subcat-color, var(--border)) 30%, transparent);
+    }
+    .subcat-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .7px; color: var(--subcat-color, var(--text-muted));
+      margin-bottom: 0 !important; padding-bottom: 0 !important;
+      border-bottom: none !important;
+    }
+    .subcat-del-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 14px; line-height: 1;
+      padding: 1px 5px; border-radius: 3px;
+      opacity: 0; transition: opacity .15s, color .15s;
+    }
+    .subcategory:hover .subcat-del-btn { opacity: 1; }
+    .subcat-del-btn:hover { color: #f87171; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -355,7 +387,7 @@
 <div class="page-header">
   <div>
     <h1>Catálogo de Compras — Categorías</h1>
-    <p>Arrastra ítems entre subcategorías · Doble clic para renombrar · Hover + × para eliminar</p>
+    <p>Arrastra ítems · Doble clic para renombrar · Hover sobre categoría o subcategoría para ver ×</p>
   </div>
   <div class="header-actions">
     <span id="sb-status" class="sb-status" style="color:#8b949e">⬤ Conectando...</span>
@@ -884,23 +916,16 @@
 
 </div>
 
-<!-- TABLA DUPLICADOS -->
-<div class="review-section">
+<!-- TABLA DUPLICADOS (dinámica) -->
+<div class="review-section" id="review-section" style="display:none">
   <div class="review-header">
     <span style="font-size:18px">⚑</span>
-    <h3>Ítems duplicados — Pendiente de revisión</h3>
+    <h3>Ítems duplicados — Pendiente de resolución</h3>
   </div>
   <div style="padding:0">
     <table>
-      <thead><tr><th>Ítem</th><th>Aparece en</th><th>Estado</th></tr></thead>
-      <tbody>
-        <tr><td><strong>Rompetráficos</strong></td><td>Impresos › POP Impreso · Exhibición › Señalización POP</td><td><span class="badge badge-dup">Por definir</span></td></tr>
-        <tr><td><strong>Rompecabezas</strong></td><td>Impresos › Otros Impresos · Exhibición › Estructuras y Display</td><td><span class="badge badge-dup">Por definir</span></td></tr>
-        <tr><td><strong>Servilletas</strong></td><td>Impresos › Empaques · Hogar › Hogar General · Misceláneos</td><td><span class="badge badge-dup">Por definir</span></td></tr>
-        <tr><td><strong>Lentes</strong></td><td>Misceláneos · Deportivos</td><td><span class="badge badge-dup">Por definir</span></td></tr>
-        <tr><td><strong>Dados</strong></td><td>Textil · Exhibición › Estructuras y Display</td><td><span class="badge badge-dup">Por definir</span></td></tr>
-        <tr><td><strong>Parrilleras</strong></td><td>Exhibición › Exhibidores · Hogar › Cocina y Preparación</td><td><span class="badge badge-dup">Por definir</span></td></tr>
-      </tbody>
+      <thead><tr><th>Ítem</th><th>Aparece en</th><th></th></tr></thead>
+      <tbody id="dup-tbody"></tbody>
     </table>
   </div>
 </div>
@@ -937,6 +962,8 @@
     loadState();
     injectAddSubcatButtons();
     injectAddCatCard();
+    injectCatDeleteButtons();
+    injectSubcatDeleteButtons();
     updateAllCounts();
     bindDeleteButtons();
     applySubcatColors();
@@ -972,10 +999,13 @@
       sbData.forEach(c => grid.appendChild(buildCardFromData(c)));
       injectAddSubcatButtons();
       injectAddCatCard();
+      injectCatDeleteButtons();
+      injectSubcatDeleteButtons();
       updateAllCounts();
       bindDeleteButtons();
       applySubcatColors();
       bindSubcatRename();
+      updateDupTable();
       setStatus('online');
     } catch(e) { setStatus('offline'); console.warn('Supabase:', e); }
   }
@@ -1038,6 +1068,7 @@
     placeholder = null;
     updateAllCounts();
     saveState();
+    updateDupTable();
   });
 
   document.addEventListener('dragover', e => {
@@ -1094,7 +1125,8 @@
     const header = document.createElement('div');
     header.className = 'card-header';
     if (customColor && !catClass) header.style.background = customColor;
-    header.innerHTML = `<h2>${name}</h2><span class="count"></span>`;
+    header.innerHTML = `<h2>${name}</h2><div style="display:flex;align-items:center;gap:6px"><span class="count"></span><button class="cat-del-btn" title="Eliminar categoría">×</button></div>`;
+    header.querySelector('.cat-del-btn').onclick = () => deleteCat(card);
     card.appendChild(header);
 
     const body = document.createElement('div');
@@ -1121,12 +1153,24 @@
     const subcat = document.createElement('div');
     subcat.className = 'subcategory';
 
+    const labelRow = document.createElement('div');
+    labelRow.className = 'subcat-header';
+
     const label = document.createElement('div');
     label.className = 'subcat-label';
     label.textContent = name;
     label.title = 'Doble clic para renombrar';
     label.style.cursor = 'pointer';
-    subcat.appendChild(label);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'subcat-del-btn';
+    delBtn.textContent = '×';
+    delBtn.title = 'Eliminar subcategoría';
+    delBtn.onclick = (e) => { e.stopPropagation(); deleteSubcat(subcat); };
+
+    labelRow.appendChild(label);
+    labelRow.appendChild(delBtn);
+    subcat.appendChild(labelRow);
 
     const zone = document.createElement('div');
     zone.className = 'drop-zone';
@@ -1261,6 +1305,7 @@
           item.remove();
           updateAllCounts();
           saveState();
+          updateDupTable();
           showToast(`"${name}" eliminado`);
         }
       });
@@ -1322,6 +1367,113 @@
     }
     span.appendChild(btn);
     return span;
+  }
+
+  // ── INJECT DELETE BUTTONS (para HTML estático inicial) ───────────────────
+  function injectCatDeleteButtons() {
+    document.querySelectorAll('#grid .card:not(#add-cat-card)').forEach(card => {
+      const header = card.querySelector('.card-header');
+      if (!header || header.querySelector('.cat-del-btn')) return;
+      const btn = document.createElement('button');
+      btn.className = 'cat-del-btn';
+      btn.textContent = '×';
+      btn.title = 'Eliminar categoría';
+      btn.onclick = () => deleteCat(card);
+      header.appendChild(btn);
+    });
+  }
+
+  function injectSubcatDeleteButtons() {
+    document.querySelectorAll('#grid .subcategory').forEach(subcat => {
+      if (subcat.querySelector('.subcat-del-btn')) return;
+      const label = subcat.querySelector('.subcat-label');
+      if (!label || label.closest('.subcat-header')) return;
+      const header = document.createElement('div');
+      header.className = 'subcat-header';
+      label.parentNode.insertBefore(header, label);
+      header.appendChild(label);
+      const btn = document.createElement('button');
+      btn.className = 'subcat-del-btn';
+      btn.textContent = '×';
+      btn.title = 'Eliminar subcategoría';
+      btn.onclick = (e) => { e.stopPropagation(); deleteSubcat(subcat); };
+      header.appendChild(btn);
+    });
+  }
+
+  // ── DELETE CATEGORY ───────────────────────────────────────────────────────
+  function deleteCat(card) {
+    const name = card.querySelector('.card-header h2')?.textContent || 'esta categoría';
+    if (!confirm(`¿Eliminar la categoría "${name}" y todos sus ítems?`)) return;
+    card.remove();
+    updateAllCounts();
+    saveState();
+    updateDupTable();
+    showToast(`Categoría "${name}" eliminada`);
+  }
+
+  // ── DELETE SUBCATEGORY ────────────────────────────────────────────────────
+  function deleteSubcat(subcat) {
+    const name = subcat.querySelector('.subcat-label')?.textContent || 'esta subcategoría';
+    if (!confirm(`¿Eliminar la subcategoría "${name}" y todos sus ítems?`)) return;
+    subcat.remove();
+    updateAllCounts();
+    saveState();
+    updateDupTable();
+    showToast(`Subcategoría "${name}" eliminada`);
+  }
+
+  // ── DUPLICATE TABLE (dinámica) ────────────────────────────────────────────
+  function updateDupTable() {
+    const index = {};
+    document.querySelectorAll('#grid .card:not(#add-cat-card)').forEach(card => {
+      const cat = card.querySelector('.card-header h2')?.textContent || '';
+      card.querySelectorAll('.subcategory').forEach(sub => {
+        const subName = sub.querySelector('.subcat-label')?.textContent || '';
+        sub.querySelectorAll('.drop-zone .item').forEach(item => {
+          const text = item.querySelector('.item-label')?.textContent || '';
+          if (!text) return;
+          if (!index[text]) index[text] = [];
+          index[text].push({ cat, sub: subName, item });
+        });
+      });
+    });
+
+    // Actualiza clases duplicate en los ítems
+    Object.entries(index).forEach(([text, locs]) => {
+      const isDup = locs.length > 1;
+      locs.forEach(({ item }) => {
+        item.classList.toggle('duplicate', isDup);
+        let flag = item.querySelector('.item-flag');
+        if (isDup && !flag) {
+          flag = document.createElement('span');
+          flag.className = 'item-flag';
+          flag.textContent = ' ⚑';
+          const del = item.querySelector('.item-del');
+          del ? item.insertBefore(flag, del) : item.appendChild(flag);
+        } else if (!isDup && flag) {
+          flag.remove();
+        }
+      });
+    });
+
+    // Reconstruye la tabla
+    const section = document.getElementById('review-section');
+    const tbody   = document.getElementById('dup-tbody');
+    if (!section || !tbody) return;
+
+    const dups = Object.entries(index).filter(([, locs]) => locs.length > 1);
+    if (dups.length === 0) { section.style.display = 'none'; return; }
+
+    section.style.display = 'block';
+    tbody.innerHTML = dups.map(([text, locs]) => {
+      const lugares = locs.map(l => `${l.cat} › ${l.sub}`).join(' · ');
+      return `<tr>
+        <td><strong>${text}</strong></td>
+        <td style="color:var(--text-muted);font-size:12px">${lugares}</td>
+        <td><span class="badge badge-dup">Duplicado</span></td>
+      </tr>`;
+    }).join('');
   }
 
   // ── COUNTS ────────────────────────────────────────────────────────────────
