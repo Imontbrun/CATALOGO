@@ -379,6 +379,41 @@
     }
     .subcategory:hover .subcat-del-btn { opacity: 1; }
     .subcat-del-btn:hover { color: #f87171; }
+
+    /* ── SUB-SUBCATEGORY ── */
+    .subsubcategory {
+      margin: 10px 0 0 14px;
+      border-left: 2px solid rgba(88,166,255,.3);
+      padding-left: 10px;
+      border-radius: 0 4px 4px 0;
+    }
+    .subsubcat-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .subsubcat-label {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .6px; color: rgba(88,166,255,.8); cursor: pointer;
+    }
+    .subsubcat-del-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 13px; line-height: 1;
+      padding: 1px 4px; border-radius: 3px;
+      opacity: 0; transition: opacity .15s, color .15s;
+    }
+    .subsubcategory:hover .subsubcat-del-btn { opacity: 1; }
+    .subsubcat-del-btn:hover { color: #f87171; }
+
+    .add-subsubcat-btn {
+      display: inline-flex; align-items: center;
+      font-size: 10px; padding: 2px 8px; border-radius: 99px;
+      background: none; color: var(--text-muted);
+      border: 1px dashed rgba(88,166,255,.3);
+      cursor: pointer; font-family: inherit;
+      transition: border-color .15s, color .15s;
+      margin-top: 8px;
+    }
+    .add-subsubcat-btn:hover { border-color: var(--accent); color: var(--accent); }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -961,6 +996,7 @@
   document.addEventListener('DOMContentLoaded', async () => {
     loadState();
     injectAddSubcatButtons();
+    injectAddSubsubcatButtons();
     injectAddCatCard();
     injectCatDeleteButtons();
     injectSubcatDeleteButtons();
@@ -968,6 +1004,7 @@
     bindDeleteButtons();
     applySubcatColors();
     bindSubcatRename();
+    bindSubsubcatRename();
     await syncFromSupabase();
   });
 
@@ -998,6 +1035,7 @@
       grid.innerHTML = '';
       sbData.forEach(c => grid.appendChild(buildCardFromData(c)));
       injectAddSubcatButtons();
+      injectAddSubsubcatButtons();
       injectAddCatCard();
       injectCatDeleteButtons();
       injectSubcatDeleteButtons();
@@ -1005,6 +1043,7 @@
       bindDeleteButtons();
       applySubcatColors();
       bindSubcatRename();
+      bindSubsubcatRename();
       updateDupTable();
       setStatus('online');
     } catch(e) { setStatus('offline'); console.warn('Supabase:', e); }
@@ -1137,7 +1176,7 @@
       note.textContent = '⏳ Subcategorías pendientes de revisión en reunión';
       body.appendChild(note);
     }
-    (subcategories || []).forEach(s => body.appendChild(buildSubcatEl(s.name, s.zoneId, s.items)));
+    (subcategories || []).forEach(s => body.appendChild(buildSubcatEl(s.name, s.zoneId, s.items, s.subsubcategories)));
 
     const addSubBtn = document.createElement('button');
     addSubBtn.className = 'add-subcat-btn';
@@ -1149,7 +1188,7 @@
     return card;
   }
 
-  function buildSubcatEl(name, zoneId, items = []) {
+  function buildSubcatEl(name, zoneId, items = [], subsubcategories = []) {
     const subcat = document.createElement('div');
     subcat.className = 'subcategory';
 
@@ -1184,7 +1223,52 @@
     addBtn.onclick = () => addItem(zone.id);
     subcat.appendChild(addBtn);
 
+    subsubcategories.forEach(ss => subcat.appendChild(buildSubsubcatEl(ss.name, ss.zoneId, ss.items)));
+
+    const addSubsubBtn = document.createElement('button');
+    addSubsubBtn.className = 'add-subsubcat-btn';
+    addSubsubBtn.textContent = '+ sub-subcategoría';
+    addSubsubBtn.onclick = () => addSubsubcategory(subcat);
+    subcat.appendChild(addSubsubBtn);
+
     return subcat;
+  }
+
+  function buildSubsubcatEl(name, zoneId, items = []) {
+    const el = document.createElement('div');
+    el.className = 'subsubcategory';
+
+    const header = document.createElement('div');
+    header.className = 'subsubcat-header';
+
+    const label = document.createElement('div');
+    label.className = 'subsubcat-label';
+    label.textContent = name;
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'subsubcat-del-btn';
+    delBtn.textContent = '×';
+    delBtn.title = 'Eliminar sub-subcategoría';
+    delBtn.onclick = (e) => { e.stopPropagation(); deleteSubsubcat(el); };
+
+    header.appendChild(label);
+    header.appendChild(delBtn);
+    el.appendChild(header);
+
+    const zone = document.createElement('div');
+    zone.className = 'drop-zone';
+    zone.id = zoneId || `zone-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+    items.forEach(({ text, dup }) => zone.appendChild(buildItem(text, dup)));
+    el.appendChild(zone);
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-item-btn';
+    addBtn.style.fontSize = '10px';
+    addBtn.textContent = '+ añadir';
+    addBtn.onclick = () => addItem(zone.id);
+    el.appendChild(addBtn);
+
+    return el;
   }
 
   // ── ADD SUBCATEGORY ───────────────────────────────────────────────────────
@@ -1193,14 +1277,40 @@
     if (!name?.trim()) return;
     const body = card.querySelector('.card-body');
     const addSubBtn = body.querySelector('.add-subcat-btn');
-    const subcat = buildSubcatEl(name.trim(), `zone-custom-${Date.now()}`, []);
+    const subcat = buildSubcatEl(name.trim(), `zone-custom-${Date.now()}`, [], []);
     body.insertBefore(subcat, addSubBtn);
     applySubcatColors();
     bindSubcatRename();
+    bindSubsubcatRename();
     bindDeleteButtons();
     updateAllCounts();
     saveState();
     showToast(`Subcategoría "${name.trim()}" creada`);
+  }
+
+  // ── ADD SUB-SUBCATEGORY ───────────────────────────────────────────────────
+  function addSubsubcategory(subcatEl) {
+    const name = prompt('Nombre de la sub-subcategoría:');
+    if (!name?.trim()) return;
+    const addBtn = subcatEl.querySelector('.add-subsubcat-btn');
+    const subsubEl = buildSubsubcatEl(name.trim(), `zone-${Date.now()}`, []);
+    subcatEl.insertBefore(subsubEl, addBtn);
+    bindSubsubcatRename();
+    bindDeleteButtons();
+    updateAllCounts();
+    saveState();
+    showToast(`Sub-subcategoría "${name.trim()}" creada`);
+  }
+
+  // ── DELETE SUB-SUBCATEGORY ────────────────────────────────────────────────
+  function deleteSubsubcat(el) {
+    const name = el.querySelector('.subsubcat-label')?.textContent || 'esta sub-subcategoría';
+    if (!confirm(`¿Eliminar "${name}" y todos sus ítems?`)) return;
+    el.remove();
+    updateAllCounts();
+    saveState();
+    updateDupTable();
+    showToast(`"${name}" eliminada`);
   }
 
   // ── ADD CATEGORY ──────────────────────────────────────────────────────────
@@ -1220,6 +1330,50 @@
     updateAllCounts();
     saveState();
     showToast(`Categoría "${name.trim()}" creada`);
+  }
+
+  // ── INJECT ADD-SUB-SUBCATEGORY BUTTONS (para HTML estático inicial) ──────
+  function injectAddSubsubcatButtons() {
+    document.querySelectorAll('#grid .subcategory').forEach(subcat => {
+      if (subcat.querySelector('.add-subsubcat-btn')) return;
+      const btn = document.createElement('button');
+      btn.className = 'add-subsubcat-btn';
+      btn.textContent = '+ sub-subcategoría';
+      btn.onclick = () => addSubsubcategory(subcat);
+      subcat.appendChild(btn);
+    });
+  }
+
+  // ── SUBSUBCAT RENAME (doble clic en el label de sub-subcategoría) ─────────
+  function bindSubsubcatRename() {
+    document.querySelectorAll('.subsubcat-label').forEach(label => {
+      if (label._bound) return;
+      label._bound = true;
+      label.title = 'Doble clic para renombrar';
+      label.addEventListener('dblclick', () => {
+        const original = label.textContent;
+        const input = document.createElement('input');
+        input.className = 'item-input';
+        input.value = original;
+        input.style.cssText = 'width:100%;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:1px 6px;';
+        label.replaceWith(input);
+        input.focus(); input.select();
+
+        const commit = () => {
+          const val = input.value.trim() || original;
+          label.textContent = val;
+          input.replaceWith(label);
+          saveState();
+          showToast(`Renombrada a "${val}"`);
+        };
+
+        input.addEventListener('blur', commit);
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') { label.textContent = original; input.replaceWith(label); }
+        });
+      });
+    });
   }
 
   // ── SUBCAT RENAME (doble clic en el label de subcategoría) ───────────────
@@ -1430,11 +1584,20 @@
       const cat = card.querySelector('.card-header h2')?.textContent || '';
       card.querySelectorAll('.subcategory').forEach(sub => {
         const subName = sub.querySelector('.subcat-label')?.textContent || '';
-        sub.querySelectorAll('.drop-zone .item').forEach(item => {
+        sub.querySelector(':scope > .drop-zone')?.querySelectorAll('.item').forEach(item => {
           const text = item.querySelector('.item-label')?.textContent || '';
           if (!text) return;
           if (!index[text]) index[text] = [];
           index[text].push({ cat, sub: subName, item });
+        });
+        sub.querySelectorAll(':scope > .subsubcategory').forEach(ssub => {
+          const ssubName = ssub.querySelector('.subsubcat-label')?.textContent || '';
+          ssub.querySelector('.drop-zone')?.querySelectorAll('.item').forEach(item => {
+            const text = item.querySelector('.item-label')?.textContent || '';
+            if (!text) return;
+            if (!index[text]) index[text] = [];
+            index[text].push({ cat, sub: `${subName} › ${ssubName}`, item });
+          });
         });
       });
     });
@@ -1493,10 +1656,18 @@
       isPending:  !!card.querySelector('.pending-note'),
       subcategories: [...card.querySelectorAll('.subcategory')].map(sub => ({
         name:   sub.querySelector('.subcat-label').textContent,
-        zoneId: sub.querySelector('.drop-zone')?.id || '',
-        items:  [...(sub.querySelector('.drop-zone')?.querySelectorAll('.item') || [])].map(item => ({
+        zoneId: sub.querySelector(':scope > .drop-zone')?.id || '',
+        items:  [...(sub.querySelector(':scope > .drop-zone')?.querySelectorAll('.item') || [])].map(item => ({
           text: item.querySelector('.item-label').textContent,
           dup:  item.classList.contains('duplicate'),
+        })),
+        subsubcategories: [...sub.querySelectorAll(':scope > .subsubcategory')].map(ssub => ({
+          name:   ssub.querySelector('.subsubcat-label')?.textContent || '',
+          zoneId: ssub.querySelector('.drop-zone')?.id || '',
+          items:  [...(ssub.querySelector('.drop-zone')?.querySelectorAll('.item') || [])].map(item => ({
+            text: item.querySelector('.item-label').textContent,
+            dup:  item.classList.contains('duplicate'),
+          })),
         })),
       })),
     }));
