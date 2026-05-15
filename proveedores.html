@@ -20,16 +20,33 @@
       --purple:   #bc8cff;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+
+    /* ── LIGHT THEME ── */
+    [data-theme="light"] {
+      --bg: #f6f8fa; --surface: #ffffff; --surface2: #f0f3f7; --surface3: #e8ecf0;
+      --border: #d0d7de; --text: #1f2328; --muted: #656d76; --accent: #0969da;
+      --green: #1a7f37; --yellow: #9a6700; --red: #cf222e; --purple: #8250df;
+    }
+    [data-theme="light"] .toast       { background: #0969da; }
+    [data-theme="light"] .btn-primary { background: #0969da; border-color: #0969da; }
+    [data-theme="light"] .modal       { box-shadow: 0 8px 32px rgba(0,0,0,.12); }
 
     /* ── HEADER ── */
     .app-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
+      padding: 12px 20px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0; position: sticky; top: 0; z-index: 30;
     }
     .app-header h1 { font-size: 15px; font-weight: 700; }
     .app-header p  { font-size: 12px; color: var(--muted); margin-top: 1px; }
-    .header-actions { display: flex; gap: 8px; }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
 
     .btn { font-size: 12px; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-family: inherit; transition: opacity .15s; }
     .btn:hover { opacity: .8; }
@@ -38,53 +55,121 @@
     .btn-danger    { background: transparent; color: var(--red); border-color: var(--red); }
     .btn-sm { font-size: 11px; padding: 4px 10px; }
 
+    .btn-theme {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      padding: 5px 9px; border-radius: 6px; cursor: pointer; font-size: 15px;
+      line-height: 1; transition: color .15s, border-color .15s;
+    }
+    .btn-theme:hover { color: var(--text); border-color: var(--accent); }
+
+    .btn-menu { display: none; }
+
     /* ── BODY ── */
-    .app-body { display: flex; flex: 1; overflow: hidden; }
+    .app-body { display: flex; flex: 1; align-items: flex-start; }
 
     /* ── SIDEBAR ── */
     .sidebar {
-      width: 260px; flex-shrink: 0;
+      width: 280px; flex-shrink: 0;
       background: var(--surface); border-right: 1px solid var(--border);
-      display: flex; flex-direction: column; overflow: hidden;
+      display: flex; flex-direction: column;
+      position: sticky; top: var(--header-h, 53px);
+      height: calc(100vh - var(--header-h, 53px));
+      overflow: hidden;
     }
-    .sidebar-header { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .sidebar-header { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
     .sidebar-header h3 { font-size: 13px; font-weight: 700; }
     .sidebar-header p  { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-    .search-wrap { padding: 10px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    /* Search */
+    .sidebar-search { padding: 8px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .search-wrap { position: relative; }
+    .search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--muted); pointer-events: none; }
     .search-input {
       width: 100%; background: var(--surface2); border: 1px solid var(--border);
       border-radius: 6px; color: var(--text); font-size: 12px; font-family: inherit;
-      padding: 6px 10px; outline: none; transition: border-color .15s;
+      padding: 6px 10px 6px 28px; outline: none; transition: border-color .15s;
     }
     .search-input:focus { border-color: var(--accent); }
     .search-input::placeholder { color: var(--muted); opacity: .6; }
 
-    .prov-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+    /* Filter chips */
+    .filter-bar {
+      padding: 7px 12px 8px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0; display: flex; flex-wrap: wrap; gap: 5px;
+    }
+    .filter-chip {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      font-size: 10px; padding: 3px 9px; border-radius: 99px;
+      cursor: pointer; font-family: inherit; font-weight: 600;
+      transition: all .15s; white-space: nowrap;
+    }
+    .filter-chip:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .filter-chip.fab.active  { background: var(--green);  border-color: var(--green); }
+    .filter-chip.imp.active  { background: #1f6feb;       border-color: #1f6feb; }
+    .filter-chip.dis.active  { background: var(--purple); border-color: var(--purple); }
+
+    /* Sort toolbar */
+    .list-toolbar {
+      padding: 4px 12px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+    }
+    .list-stats { font-size: 10px; color: var(--muted); }
+    .sort-btn {
+      background: none; border: none; color: var(--muted); font-size: 10px;
+      cursor: pointer; padding: 3px 6px; border-radius: 4px; font-family: inherit;
+      transition: color .1s; display: flex; align-items: center; gap: 3px;
+    }
+    .sort-btn:hover { color: var(--accent); }
+
+    /* Provider list */
+    .prov-list { flex: 1; overflow-y: auto; padding: 4px 0; }
 
     .prov-item {
-      padding: 9px 14px; cursor: pointer; transition: background .1s;
+      padding: 8px 14px 8px 11px; cursor: pointer; transition: background .1s;
       border-left: 3px solid transparent;
     }
     .prov-item:hover { background: var(--surface2); }
     .prov-item.active { background: rgba(88,166,255,.08); border-left-color: var(--accent); }
-    .prov-item-name  { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .prov-item-meta  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .prov-item-top { display: flex; align-items: center; gap: 6px; }
+    .prov-item-name { font-size: 12px; font-weight: 600; color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .prov-item-meta { font-size: 10px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .prov-dot { opacity: .35; }
 
-    .sidebar-footer { padding: 10px 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .sidebar-footer {
+      padding: 10px 12px; border-top: 1px solid var(--border); flex-shrink: 0;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .stats-row {
+      display: flex; gap: 5px; flex-wrap: wrap;
+    }
+    .stat-chip {
+      font-size: 10px; color: var(--muted); background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 99px; padding: 2px 8px;
+    }
 
     /* ── MAIN ── */
-    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
+    .empty-state {
+      padding: 60px 24px; flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 10px; color: var(--muted);
+    }
+    .empty-icon { font-size: 40px; opacity: .25; }
+    .empty-state h3 { font-size: 14px; font-weight: 600; }
+    .empty-state p  { font-size: 12px; text-align: center; max-width: 280px; line-height: 1.6; }
+
+    /* Form header — sticky */
     .form-header {
       padding: 14px 24px; background: var(--surface); border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; position: sticky; top: var(--header-h, 53px); z-index: 20;
     }
     .form-title    { font-size: 14px; font-weight: 700; }
     .form-subtitle { font-size: 11px; color: var(--muted); margin-top: 2px; }
     .form-actions  { display: flex; gap: 8px; align-items: center; }
 
-    .form-body { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+    .form-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
 
     /* ── FORM SECTIONS ── */
     .form-section {
@@ -154,21 +239,10 @@
     .add-red-btn:hover { border-color: var(--accent); color: var(--accent); }
 
     /* ── BADGE ── */
-    .badge {
-      font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 600;
-    }
-    .badge-fab  { background: rgba(63,185,80,.12);  color: var(--green);  border: 1px solid rgba(63,185,80,.3); }
-    .badge-imp  { background: rgba(88,166,255,.12); color: var(--accent); border: 1px solid rgba(88,166,255,.3); }
-    .badge-dis  { background: rgba(188,140,255,.12);color: var(--purple); border: 1px solid rgba(188,140,255,.3); }
-
-    /* ── EMPTY STATE ── */
-    .empty-state {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 10px; color: var(--muted);
-    }
-    .empty-icon { font-size: 40px; opacity: .25; }
-    .empty-state h3 { font-size: 14px; font-weight: 600; }
-    .empty-state p  { font-size: 12px; text-align: center; max-width: 280px; line-height: 1.6; }
+    .badge { font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+    .badge-fab { background: rgba(63,185,80,.12);   color: var(--green);  border: 1px solid rgba(63,185,80,.3); }
+    .badge-imp { background: rgba(88,166,255,.12);  color: var(--accent); border: 1px solid rgba(88,166,255,.3); }
+    .badge-dis { background: rgba(188,140,255,.12); color: var(--purple); border: 1px solid rgba(188,140,255,.3); }
 
     /* ── TOAST ── */
     .toast {
@@ -184,6 +258,42 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
     .sb-status { font-size: 11px; transition: color .3s; padding: 0 4px; }
+
+    /* ── SIDEBAR OVERLAY (mobile) ── */
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55); z-index: 40;
+    }
+    .sidebar-overlay.open { display: block; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .app-header { padding: 10px 14px; gap: 8px; flex-wrap: wrap; }
+      .app-header > div:first-child { flex: 1; min-width: 0; }
+      .app-header h1 { font-size: 14px; }
+      .app-header p  { display: none; }
+      .header-actions { gap: 6px; }
+      .header-actions .btn-secondary:not(.btn-menu) { display: none; }
+      .btn-menu { display: inline-flex; align-items: center; gap: 5px; }
+
+      .sidebar {
+        position: fixed; top: 0; left: 0; bottom: 0;
+        width: 290px; z-index: 50; height: 100%;
+        transform: translateX(-100%); transition: transform .25s ease;
+      }
+      .sidebar.open { transform: translateX(0); }
+
+      .form-header { padding: 10px 14px; position: static; flex-wrap: wrap; gap: 8px; }
+      .form-body   { padding: 14px; gap: 14px; }
+      .form-section-body { grid-template-columns: 1fr; }
+      .full-width { grid-column: 1; }
+      .red-row { grid-template-columns: 130px 1fr 32px; }
+    }
+
+    @media (max-width: 480px) {
+      .btn { font-size: 11px; padding: 5px 10px; }
+      .form-section-body { padding: 12px; }
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -197,86 +307,113 @@
   </div>
   <div class="header-actions">
     <span id="sb-status" class="sb-status" style="color:#8b949e">⬤ Conectando...</span>
+    <button class="btn btn-secondary btn-menu btn-sm" onclick="toggleSidebar()">☰ Proveedores</button>
+    <button class="btn-theme" id="btn-theme" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
     <button class="btn btn-secondary" onclick="exportJSON()">↓ Exportar JSON</button>
     <button class="btn btn-primary"   onclick="nuevoProveedor()">+ Nuevo proveedor</button>
   </div>
 </header>
 
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
 <div class="app-body">
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <h3>Proveedores registrados</h3>
       <p id="prov-count">0 proveedores</p>
     </div>
-    <div class="search-wrap">
-      <input class="search-input" id="search" placeholder="Buscar por nombre o código..." oninput="renderList()">
-    </div>
-    <div class="prov-list" id="prov-list">
-      <div class="empty-state" style="padding: 40px 16px; text-align:center">
-        <p style="font-size:12px;color:var(--muted)">Sin proveedores registrados aún.</p>
+
+    <div class="sidebar-search">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" id="search"
+          placeholder="Buscar por nombre o código..."
+          oninput="renderList()">
       </div>
     </div>
+
+    <div class="filter-bar">
+      <button class="filter-chip active" data-filter="todos"    onclick="setFilter('todos')">Todos</button>
+      <button class="filter-chip fab"    data-filter="FABRICANTE"    onclick="setFilter('FABRICANTE')">Fabricante</button>
+      <button class="filter-chip imp"    data-filter="IMPORTADOR"    onclick="setFilter('IMPORTADOR')">Importador</button>
+      <button class="filter-chip dis"    data-filter="DISTRIBUIDOR"  onclick="setFilter('DISTRIBUIDOR')">Distribuidor</button>
+    </div>
+
+    <div class="list-toolbar">
+      <span class="list-stats" id="list-stats">—</span>
+      <button class="sort-btn" id="sort-btn" onclick="toggleSort()" title="Cambiar orden">
+        <span id="sort-icon">↕</span> <span id="sort-label">A–Z</span>
+      </button>
+    </div>
+
+    <div class="prov-list" id="prov-list">
+      <div style="padding:24px 16px;text-align:center;font-size:12px;color:var(--muted)">
+        Sin proveedores registrados aún.
+      </div>
+    </div>
+
     <div class="sidebar-footer">
-      <button class="btn btn-secondary" style="width:100%;font-size:11px" onclick="nuevoProveedor()">+ Registrar nuevo proveedor</button>
+      <div class="stats-row" id="stats-row"></div>
+      <button class="btn btn-secondary" style="width:100%;font-size:11px" onclick="nuevoProveedor()">
+        + Registrar nuevo proveedor
+      </button>
     </div>
   </aside>
 
   <!-- MAIN -->
   <main class="main">
 
-    <!-- Empty state -->
     <div class="empty-state" id="empty-state">
       <div class="empty-icon">🏢</div>
       <h3>Ningún proveedor seleccionado</h3>
       <p>Selecciona un proveedor de la lista o registra uno nuevo.</p>
     </div>
 
-    <!-- Form -->
-    <div id="form-wrap" style="display:none; flex:1; display:none; flex-direction:column; overflow:hidden;">
+    <div id="form-wrap" style="display:none">
       <div class="form-header">
         <div>
           <div class="form-title" id="form-title">Nuevo proveedor</div>
           <div class="form-subtitle" id="form-subtitle">Completa los datos del proveedor</div>
         </div>
         <div class="form-actions">
-          <button class="btn btn-danger btn-sm"     id="btn-delete" onclick="deleteProveedor()" style="display:none">Eliminar</button>
-          <button class="btn btn-secondary btn-sm"  onclick="nuevoProveedor()">Limpiar</button>
-          <button class="btn btn-primary btn-sm"    onclick="saveProveedor()">✓ Guardar</button>
+          <button class="btn btn-danger btn-sm"    id="btn-delete" onclick="deleteProveedor()" style="display:none">Eliminar</button>
+          <button class="btn btn-secondary btn-sm" onclick="nuevoProveedor()">Limpiar</button>
+          <button class="btn btn-primary btn-sm"   onclick="saveProveedor()">✓ Guardar</button>
         </div>
       </div>
       <div class="form-body">
 
-        <!-- Admin — crea la cuenta y envía el link -->
-        <div class="form-section" style="border-color: rgba(210,153,34,.4); background: rgba(210,153,34,.04)">
-          <div class="form-section-header" style="color:var(--yellow); border-color: rgba(210,153,34,.3)">
+        <!-- Admin -->
+        <div class="form-section" style="border-color:rgba(210,153,34,.4);background:rgba(210,153,34,.04)">
+          <div class="form-section-header" style="color:var(--yellow);border-color:rgba(210,153,34,.3)">
             🔒 Creación de cuenta — Admin
           </div>
           <div class="form-section-body">
             <div class="form-group">
               <label class="form-label" style="color:var(--yellow)">Código SAP <span class="req">*</span></label>
               <input class="form-input" id="f-codigo" placeholder="Ej: PRV-001" oninput="upperClean(this)"
-                style="border-color: rgba(210,153,34,.4)">
+                style="border-color:rgba(210,153,34,.4)">
               <span style="font-size:11px;color:var(--muted)">Consumo interno — el proveedor no lo ve.</span>
             </div>
 
             <div class="form-group">
               <label class="form-label" style="color:var(--yellow)">Nombre del Proveedor <span class="req">*</span></label>
               <input class="form-input" id="f-nombre" placeholder="Razón social o nombre comercial" oninput="upperClean(this)"
-                style="border-color: rgba(210,153,34,.4)">
+                style="border-color:rgba(210,153,34,.4)">
             </div>
 
             <div class="form-group full-width">
               <label class="form-label" style="color:var(--yellow)">Correo de contacto <span class="req">*</span></label>
               <input class="form-input" id="f-correo" type="email" placeholder="correo@empresa.com" oninput="upperClean(this)"
-                style="border-color: rgba(210,153,34,.4)">
+                style="border-color:rgba(210,153,34,.4); text-transform:none">
               <span style="font-size:11px;color:var(--muted)">Se envía el link de acceso a esta dirección.</span>
             </div>
           </div>
         </div>
 
-        <!-- Datos que rellena el proveedor -->
+        <!-- Datos del proveedor -->
         <div class="form-section">
           <div class="form-section-header">📋 Datos del Proveedor</div>
           <div class="form-section-body">
@@ -320,7 +457,7 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label">Estado</label>
+              <label class="form-label">Estado / Región</label>
               <input class="form-input" id="f-estado" placeholder="Ej: MIRANDA" oninput="upperClean(this)">
             </div>
 
@@ -386,14 +523,35 @@
   let proveedores = [];
   let editingId   = null;
   let redesRows   = [];
+  let activeFilter = 'todos';
+  let sortAsc      = true;
 
   // ── INIT ──────────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', async () => {
+    // Theme init
+    const savedTheme = localStorage.getItem('catalogo-theme') || 'dark';
+    document.documentElement.dataset.theme = savedTheme;
+    const btnTheme = document.getElementById('btn-theme');
+    if (btnTheme) btnTheme.textContent = savedTheme === 'light' ? '☀️' : '🌙';
+
+    // Header height for sticky sidebar
+    const hdr = document.querySelector('.app-header');
+    if (hdr) document.documentElement.style.setProperty('--header-h', hdr.offsetHeight + 'px');
+
     setStatus('connecting');
     proveedores = await loadState();
     renderList();
     setStatus('online');
   });
+
+  // ── THEME ─────────────────────────────────────────────────────────────────
+  function toggleTheme() {
+    const html    = document.documentElement;
+    const isLight = html.dataset.theme === 'light';
+    html.dataset.theme = isLight ? 'dark' : 'light';
+    document.getElementById('btn-theme').textContent = isLight ? '🌙' : '☀️';
+    localStorage.setItem('catalogo-theme', html.dataset.theme);
+  }
 
   // ── SUPABASE ──────────────────────────────────────────────────────────────
   function setStatus(s) {
@@ -412,24 +570,72 @@
 
   // ── UPPERCASE / CLEAN ─────────────────────────────────────────────────────
   function upperClean(el) {
+    if (el.type === 'email') return;
     const pos = el.selectionStart;
     el.value = el.value.toUpperCase().replace(/  +/g, ' ');
     el.setSelectionRange(pos, pos);
   }
 
+  // ── FILTER / SORT ─────────────────────────────────────────────────────────
+  function setFilter(filter) {
+    activeFilter = filter;
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.classList.toggle('active', chip.dataset.filter === filter);
+    });
+    renderList();
+  }
+
+  function toggleSort() {
+    sortAsc = !sortAsc;
+    document.getElementById('sort-icon').textContent  = sortAsc ? '↕' : '↕';
+    document.getElementById('sort-label').textContent = sortAsc ? 'A–Z' : 'Z–A';
+    renderList();
+  }
+
   // ── LIST ──────────────────────────────────────────────────────────────────
   function renderList() {
-    const q    = document.getElementById('search').value.toUpperCase().trim();
+    const q    = (document.getElementById('search').value || '').toUpperCase().trim();
     const list = document.getElementById('prov-list');
-    const filtered = proveedores.filter(p =>
-      !q || p.nombre.includes(q) || p.codigo.includes(q)
-    );
 
+    let filtered = proveedores.filter(p => {
+      const matchSearch = !q || (p.nombre || '').includes(q) || (p.codigo || '').includes(q) || (p.pais || '').includes(q);
+      const matchFilter = activeFilter === 'todos' || p.clasificacion === activeFilter;
+      return matchSearch && matchFilter;
+    });
+
+    filtered = filtered.slice().sort((a, b) => {
+      const na = (a.nombre || '').toLowerCase();
+      const nb = (b.nombre || '').toLowerCase();
+      return sortAsc ? na.localeCompare(nb) : nb.localeCompare(na);
+    });
+
+    // Update count display
+    const total = proveedores.length;
     document.getElementById('prov-count').textContent =
-      proveedores.length + ' proveedor' + (proveedores.length !== 1 ? 'es' : '');
+      total + ' proveedor' + (total !== 1 ? 'es' : '');
+
+    document.getElementById('list-stats').textContent =
+      filtered.length === total
+        ? `${total} en total`
+        : `${filtered.length} de ${total}`;
+
+    // Stats chips in footer
+    const statsFab = proveedores.filter(p => p.clasificacion === 'FABRICANTE').length;
+    const statsImp = proveedores.filter(p => p.clasificacion === 'IMPORTADOR').length;
+    const statsDis = proveedores.filter(p => p.clasificacion === 'DISTRIBUIDOR').length;
+    const statsRow = document.getElementById('stats-row');
+    if (statsRow) {
+      statsRow.innerHTML = [
+        statsFab ? `<span class="stat-chip">${statsFab} Fab.</span>` : '',
+        statsImp ? `<span class="stat-chip">${statsImp} Imp.</span>` : '',
+        statsDis ? `<span class="stat-chip">${statsDis} Dis.</span>` : '',
+      ].filter(Boolean).join('') || '<span class="stat-chip" style="opacity:.5">Sin datos</span>';
+    }
 
     if (filtered.length === 0) {
-      list.innerHTML = `<div style="padding:24px 16px;text-align:center;font-size:12px;color:var(--muted)">Sin resultados</div>`;
+      list.innerHTML = `<div style="padding:24px 16px;text-align:center;font-size:12px;color:var(--muted)">
+        ${q || activeFilter !== 'todos' ? 'Sin resultados para esta búsqueda' : 'Sin proveedores registrados aún.'}
+      </div>`;
       return;
     }
 
@@ -438,24 +644,31 @@
       const item = document.createElement('div');
       item.className = 'prov-item' + (p.id === editingId ? ' active' : '');
       const badgeClass = CLASIFICACION_BADGE[p.clasificacion] || '';
+      const location = [p.pais, p.estado_region].filter(Boolean).join(', ');
+
       item.innerHTML = `
-        <div class="prov-item-name">${p.nombre || '—'}</div>
+        <div class="prov-item-top">
+          <span class="prov-item-name">${p.nombre || '—'}</span>
+          ${badgeClass ? `<span class="badge ${badgeClass}" style="font-size:9px;white-space:nowrap">${p.clasificacion}</span>` : ''}
+        </div>
         <div class="prov-item-meta">
-          ${p.codigo ? p.codigo + ' · ' : ''}
-          <span class="badge ${badgeClass}" style="font-size:9px">${p.clasificacion || ''}</span>
+          ${p.codigo ? `<span>${p.codigo}</span>` : ''}
+          ${p.codigo && (location || p.area) ? '<span class="prov-dot">·</span>' : ''}
+          ${p.area ? `<span>${p.area}</span>` : ''}
+          ${p.area && location ? '<span class="prov-dot">·</span>' : ''}
+          ${location ? `<span>${location}</span>` : ''}
         </div>
       `;
-      item.onclick = () => loadProveedor(p.id);
+      item.onclick = () => { loadProveedor(p.id); if (window.innerWidth <= 768) closeSidebar(); };
       list.appendChild(item);
     });
   }
 
   // ── FORM ──────────────────────────────────────────────────────────────────
   function showForm() {
-    document.getElementById('empty-state').style.display  = 'none';
+    document.getElementById('empty-state').style.display = 'none';
     const fw = document.getElementById('form-wrap');
-    fw.style.display = 'flex';
-    fw.style.flexDirection = 'column';
+    fw.style.display = 'block';
   }
 
   function nuevoProveedor() {
@@ -466,6 +679,7 @@
     document.getElementById('form-subtitle').textContent = 'Completa los datos del proveedor';
     document.getElementById('btn-delete').style.display  = 'none';
     renderList();
+    document.getElementById('f-codigo').focus();
   }
 
   function clearForm() {
@@ -501,7 +715,7 @@
 
     showForm();
     document.getElementById('form-title').textContent    = p.nombre || 'Proveedor';
-    document.getElementById('form-subtitle').textContent = p.codigo + (p.area ? ' · ' + p.area : '');
+    document.getElementById('form-subtitle').textContent = (p.codigo || '') + (p.area ? ' · ' + p.area : '') + (p.pais ? ' · ' + p.pais : '');
     document.getElementById('btn-delete').style.display  = 'inline-flex';
     renderList();
   }
@@ -510,7 +724,7 @@
     const row = {
       codigo:         trim(document.getElementById('f-codigo').value),
       nombre:         trim(document.getElementById('f-nombre').value),
-      correo:         trim(document.getElementById('f-correo').value),
+      correo:         document.getElementById('f-correo').value.trim().toLowerCase(),
       rif:            trim(document.getElementById('f-rif').value),
       clasificacion:  document.getElementById('f-clasificacion').value,
       area:           document.getElementById('f-area').value,
@@ -534,6 +748,7 @@
     if (!data.nombre)  { showToast('⚠ El nombre es requerido');     return; }
     if (!data.codigo)  { showToast('⚠ El código SAP es requerido'); return; }
     if (!data.correo)  { showToast('⚠ El correo es requerido');     return; }
+    if (!data.telefono && !data.celular) { showToast('⚠ Ingresa al menos un número de contacto'); return; }
 
     setStatus('saving');
     try {
@@ -543,7 +758,7 @@
       proveedores = await loadState();
       renderList();
       document.getElementById('form-title').textContent    = saved.nombre;
-      document.getElementById('form-subtitle').textContent = (saved.codigo || '') + (saved.area ? ' · ' + saved.area : '');
+      document.getElementById('form-subtitle').textContent = (saved.codigo || '') + (saved.area ? ' · ' + saved.area : '') + (saved.pais ? ' · ' + saved.pais : '');
       document.getElementById('btn-delete').style.display  = 'inline-flex';
       setStatus('saved');
       showToast('Proveedor guardado ✓');
@@ -556,7 +771,7 @@
   async function deleteProveedor() {
     if (!editingId) return;
     const p = proveedores.find(x => x.id === editingId);
-    if (!confirm(`¿Eliminar a "${p?.nombre}"?`)) return;
+    if (!confirm(`¿Eliminar a "${p?.nombre}"? Esta acción no se puede deshacer.`)) return;
     setStatus('saving');
     try {
       const { error } = await DB.from('proveedores').delete().eq('id', editingId);
@@ -574,10 +789,10 @@
     }
   }
 
-  // ── TELÉFONO / CELULAR ───────────────────────────────────────────────────
+  // ── TELÉFONO / CELULAR ────────────────────────────────────────────────────
   function updatePhoneLabels() {
-    const tel = document.getElementById('f-telefono').value.trim();
-    const cel = document.getElementById('f-celular').value.trim();
+    const tel  = document.getElementById('f-telefono').value.trim();
+    const cel  = document.getElementById('f-celular').value.trim();
     const lblT = document.getElementById('lbl-telefono');
     const lblC = document.getElementById('lbl-celular');
     if (tel && !cel) {
@@ -662,6 +877,18 @@
     a.download = `proveedores-${new Date().toISOString().slice(0,10)}.json`;
     a.click();
     showToast('JSON exportado ✓');
+  }
+
+  // ── MOBILE SIDEBAR ────────────────────────────────────────────────────────
+  function toggleSidebar() {
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('sidebar-overlay');
+    const open = sb.classList.toggle('open');
+    ov.classList.toggle('open', open);
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
   }
 
   // ── TOAST ─────────────────────────────────────────────────────────────────
