@@ -21,13 +21,13 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
 
     /* ── HEADER ── */
     .app-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
+      flex-shrink: 0; position: sticky; top: 0; z-index: 30;
     }
     .app-header h1 { font-size: 15px; font-weight: 700; }
     .app-header p  { font-size: 12px; color: var(--muted); margin-top: 1px; }
@@ -45,13 +45,16 @@
     .btn-sm { font-size: 11px; padding: 4px 10px; }
 
     /* ── BODY ── */
-    .app-body { display: flex; flex: 1; overflow: hidden; }
+    .app-body { display: flex; flex: 1; align-items: flex-start; }
 
     /* ── SIDEBAR ── */
     .sidebar {
-      width: 280px; flex-shrink: 0;
+      width: 290px; flex-shrink: 0;
       background: var(--surface); border-right: 1px solid var(--border);
-      display: flex; flex-direction: column; overflow: hidden;
+      display: flex; flex-direction: column;
+      position: sticky; top: var(--header-h, 53px);
+      height: calc(100vh - var(--header-h, 53px));
+      overflow: hidden;
     }
     .sidebar-header {
       padding: 14px 16px 10px;
@@ -100,6 +103,28 @@
     .tree-item.selected { background: rgba(88,166,255,.12); color: var(--accent); font-weight: 600; }
     .tree-item.dup { color: var(--yellow); }
 
+    .tree-subsubcat { padding-left: 8px; }
+    .tree-subsubcat-label {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 16px 4px 32px; cursor: pointer; font-size: 11px; color: var(--muted);
+      transition: background .1s;
+    }
+    .tree-subsubcat-label:hover { background: var(--surface2); color: var(--text); }
+
+    .tree-subitems { padding-left: 8px; }
+    .tree-subitem {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 16px 4px 48px; cursor: pointer; font-size: 11px;
+      color: var(--muted); transition: background .1s; position: relative;
+    }
+    .tree-subitem::before {
+      content: ''; position: absolute; left: 36px;
+      width: 8px; height: 1px; background: var(--border);
+    }
+    .tree-subitem:hover { background: var(--surface2); color: var(--text); }
+    .tree-subitem.selected { background: rgba(88,166,255,.12); color: var(--accent); font-weight: 600; }
+    .tree-subitem.dup { color: var(--yellow); }
+
     .sidebar-footer {
       padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0;
     }
@@ -107,10 +132,10 @@
     .import-note a { color: var(--accent); cursor: pointer; text-decoration: underline; }
 
     /* ── MAIN ── */
-    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
     .empty-state {
-      flex: 1; display: flex; flex-direction: column;
+      padding: 60px 24px; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 12px;
       color: var(--muted);
     }
@@ -118,17 +143,18 @@
     .empty-state h3 { font-size: 16px; font-weight: 600; color: var(--muted); }
     .empty-state p  { font-size: 13px; text-align: center; max-width: 320px; line-height: 1.6; }
 
-    .builder { flex: 1; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+    .builder { flex: 1; display: flex; flex-direction: column; }
 
     .builder-header {
       padding: 14px 24px; background: var(--surface); border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: var(--header-h, 53px); z-index: 20;
     }
     .breadcrumb { font-size: 13px; color: var(--muted); }
     .breadcrumb span { color: var(--text); font-weight: 600; }
     .builder-actions { display: flex; gap: 8px; }
 
-    .builder-body { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+    .builder-body { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
 
     /* ── SECTIONS ── */
     .fields-section {
@@ -147,9 +173,11 @@
     .section-badge {
       font-size: 10px; padding: 2px 7px; border-radius: 99px; font-weight: 600;
     }
-    .badge-locked  { background: rgba(139,148,158,.15); color: var(--muted); border: 1px solid var(--border); }
-    .badge-cat     { background: rgba(188,140,255,.12); color: var(--purple); border: 1px solid rgba(188,140,255,.3); }
-    .badge-mat     { background: rgba(63,185,80,.1);   color: var(--green);  border: 1px solid rgba(63,185,80,.3); }
+    .badge-locked     { background: rgba(139,148,158,.15); color: var(--muted);   border: 1px solid var(--border); }
+    .badge-cat        { background: rgba(188,140,255,.12); color: var(--purple); border: 1px solid rgba(188,140,255,.3); }
+    .badge-subcat     { background: rgba(88,166,255,.1);   color: var(--accent); border: 1px solid rgba(88,166,255,.3); }
+    .badge-subsubcat  { background: rgba(45,212,191,.1);   color: #2dd4bf;       border: 1px solid rgba(45,212,191,.3); }
+    .badge-mat        { background: rgba(63,185,80,.1);    color: var(--green);  border: 1px solid rgba(63,185,80,.3); }
 
     .section-body { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
 
@@ -302,13 +330,75 @@
     .table-input {
       background: var(--surface2); border: 1px solid var(--border); border-radius: 5px;
       color: var(--text); font-size: 12px; font-family: inherit;
-      padding: 5px 8px; width: 100%; outline: none; transition: border-color .15s;
+      padding: 5px 8px; width: 100%; outline: none; transition: border-color .15s, background .15s;
     }
     .table-input:focus { border-color: var(--accent); }
     .table-input::placeholder { color: var(--muted); opacity: .5; }
+    .table-input.auto-input {
+      background: rgba(88,166,255,.06); color: var(--accent);
+      border-color: rgba(88,166,255,.25); cursor: default;
+    }
     .precio-wrap { display: flex; align-items: center; gap: 5px; }
     .precio-prefix { color: var(--muted); font-size: 11px; flex-shrink: 0; }
-    .auto-calc { color: var(--green); font-family: monospace; font-size: 12px; padding: 0 4px; }
+    .auto-badge {
+      font-size: 9px; color: var(--accent); margin-top: 3px;
+      opacity: .75; line-height: 1; text-align: center;
+    }
+
+    /* ── LIGHT THEME ── */
+    [data-theme="light"] {
+      --bg: #f6f8fa; --surface: #ffffff; --surface2: #f0f3f7; --surface3: #e8ecf0;
+      --border: #d0d7de; --text: #1f2328; --muted: #656d76; --accent: #0969da;
+      --green: #1a7f37; --yellow: #9a6700; --red: #cf222e; --purple: #8250df;
+    }
+    [data-theme="light"] .modal         { box-shadow: 0 8px 32px rgba(0,0,0,.12); }
+    [data-theme="light"] .toast         { background: #0969da; }
+    [data-theme="light"] .btn-primary   { background: #0969da; border-color: #0969da; }
+    [data-theme="light"] .field-placeholder { background: rgba(9,105,218,.05); border-color: #0969da; }
+
+    /* ── THEME TOGGLE ── */
+    .btn-theme {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      padding: 5px 9px; border-radius: 6px; cursor: pointer; font-size: 15px;
+      line-height: 1; transition: color .15s, border-color .15s;
+    }
+    .btn-theme:hover { color: var(--text); border-color: var(--accent); }
+
+    /* ── SIDEBAR SEARCH ── */
+    .sidebar-search { padding: 8px 12px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .search-wrap { position: relative; }
+    .search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--muted); pointer-events: none; }
+    .sidebar-search-input {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: 12px; font-family: inherit;
+      padding: 6px 10px 6px 28px; outline: none; transition: border-color .15s;
+    }
+    .sidebar-search-input:focus { border-color: var(--accent); }
+    .sidebar-controls { display: flex; gap: 6px; margin-top: 6px; }
+    .ctrl-btn {
+      flex: 1; background: none; border: 1px solid var(--border);
+      color: var(--muted); font-size: 10px; padding: 4px 2px; border-radius: 5px;
+      cursor: pointer; font-family: inherit; transition: color .1s, border-color .1s;
+    }
+    .ctrl-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .tree-item.search-match, .tree-subitem.search-match { color: var(--accent); font-weight: 600; }
+
+    /* ── CAT COUNT BADGE ── */
+    .cat-count { font-size: 9px; color: var(--muted); margin-left: auto; background: var(--surface3); padding: 1px 6px; border-radius: 10px; flex-shrink: 0; }
+
+    /* ── COPY FIELD MODAL ── */
+    .copy-modal { width: 520px; }
+    .copy-tree-container { border: 1px solid var(--border); border-radius: 8px; max-height: 300px; overflow-y: auto; }
+    .copy-tree-section { padding: 6px 0; }
+    .copy-tree-section + .copy-tree-section { border-top: 1px solid var(--border); }
+    .copy-tree-cat-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; padding: 6px 12px 3px; display: flex; align-items: center; gap: 6px; }
+    .copy-mat-item { display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 16px; cursor: pointer; font-size: 12px; transition: background .1s; border-radius: 4px; margin: 0 4px; }
+    .copy-mat-item:hover:not(.is-current) { background: var(--surface2); }
+    .copy-mat-item.is-current { color: var(--muted); font-style: italic; pointer-events: none; opacity: .6; }
+    .copy-mat-item input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+    .copy-search-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-size: 12px; font-family: inherit; padding: 7px 12px; outline: none; width: 100%; transition: border-color .15s; }
+    .copy-search-input:focus { border-color: var(--accent); }
+    .copy-sel-count { font-size: 11px; color: var(--accent); margin-left: auto; }
 
     /* ── SCROLLBAR ── */
     ::-webkit-scrollbar { width: 6px; }
@@ -326,8 +416,6 @@
 
     /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
-      body { overflow: auto; height: auto; min-height: 100vh; }
-
       /* Header */
       .app-header { padding: 10px 14px; gap: 8px; flex-wrap: wrap; }
       .app-header > div:first-child { flex: 1; min-width: 0; }
@@ -339,25 +427,21 @@
       .sb-status { font-size: 10px; }
 
       /* Body */
-      .app-body { flex-direction: column; overflow: visible; height: auto; }
+      .app-body { flex-direction: column; }
 
       /* Sidebar → drawer */
       .sidebar {
         position: fixed; top: 0; left: 0; bottom: 0;
-        width: 280px; z-index: 50;
+        width: 290px; z-index: 50; height: 100%;
         transform: translateX(-100%);
         transition: transform .25s ease;
       }
       .sidebar.open { transform: translateX(0); }
 
-      /* Main */
-      .main { overflow: visible; }
-      .builder { overflow: visible; flex-shrink: unset; }
-
-      /* Builder header */
-      .builder-header { padding: 10px 14px; gap: 8px; flex-wrap: wrap; }
+      /* Builder header: no sticky on mobile (saves space) */
+      .builder-header { padding: 10px 14px; gap: 8px; flex-wrap: wrap; position: static; }
       .breadcrumb { font-size: 11px; }
-      .builder-body { padding: 14px; gap: 14px; overflow: visible; }
+      .builder-body { padding: 14px; gap: 14px; }
 
       /* Sections */
       .section-group { padding: 12px; gap: 10px; }
@@ -400,6 +484,7 @@
   <div class="header-actions">
     <span id="sb-status" class="sb-status" style="color:#8b949e">⬤ Conectando...</span>
     <button class="btn btn-secondary btn-menu" onclick="toggleSidebar()">☰ Materiales</button>
+    <button class="btn-theme" id="btn-theme" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
     <button class="btn btn-secondary" onclick="exportJSON()">↓ Exportar JSON</button>
     <button class="btn btn-primary"   onclick="saveManual()">✓ Guardar</button>
   </div>
@@ -414,6 +499,17 @@
     <div class="sidebar-header">
       <h3>Taxonomía de Materiales</h3>
       <p>Selecciona un tipo de material</p>
+    </div>
+    <div class="sidebar-search">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="sidebar-search-input" id="tree-search" type="text"
+          placeholder="Buscar material..." oninput="filterTree(this.value)">
+      </div>
+      <div class="sidebar-controls">
+        <button class="ctrl-btn" onclick="expandAllTree()">▼ Expandir todo</button>
+        <button class="ctrl-btn" onclick="collapseAllTree()">▶ Colapsar todo</button>
+      </div>
     </div>
     <div class="tree" id="tree"></div>
     <div class="sidebar-footer">
@@ -462,11 +558,12 @@
           </div>
 
           <div id="specs-content" style="display:none;flex-direction:column;gap:12px">
+
             <!-- Campos de categoría -->
             <div class="fields-section">
               <div class="section-header">
                 <div class="section-title">
-                  Campos de categoría
+                  🏷 Categoría
                   <span id="cat-section-name">· —</span>
                 </div>
                 <span class="section-badge badge-cat">Compartidos</span>
@@ -477,11 +574,41 @@
               </div>
             </div>
 
+            <!-- Campos de subcategoría -->
+            <div class="fields-section">
+              <div class="section-header">
+                <div class="section-title">
+                  📂 Subcategoría
+                  <span id="subcat-section-name">· —</span>
+                </div>
+                <span class="section-badge badge-subcat">Compartidos</span>
+              </div>
+              <div class="section-body" id="subcat-fields-body"></div>
+              <div style="padding: 0 16px 14px">
+                <button class="add-field-btn" onclick="openModal('subcategory')">+ Agregar campo de subcategoría</button>
+              </div>
+            </div>
+
+            <!-- Campos de sub-subcategoría (sólo cuando aplica) -->
+            <div class="fields-section" id="subsubcat-section" style="display:none">
+              <div class="section-header">
+                <div class="section-title">
+                  🗂 Sub-subcategoría
+                  <span id="subsubcat-section-name">· —</span>
+                </div>
+                <span class="section-badge badge-subsubcat">Compartidos</span>
+              </div>
+              <div class="section-body" id="subsubcat-fields-body"></div>
+              <div style="padding: 0 16px 14px">
+                <button class="add-field-btn" onclick="openModal('subsubcategory')">+ Agregar campo de sub-subcategoría</button>
+              </div>
+            </div>
+
             <!-- Campos específicos del material -->
             <div class="fields-section">
               <div class="section-header">
                 <div class="section-title">
-                  Campos del tipo de material
+                  🔩 Tipo de material
                   <span id="mat-section-name">· —</span>
                 </div>
                 <span class="section-badge badge-mat">Exclusivos</span>
@@ -509,8 +636,8 @@
                 <thead>
                   <tr>
                     <th>Cantidad</th>
-                    <th>Precio unitario (USD)</th>
-                    <th>Precio Total (USD)</th>
+                    <th>Precio Unitario (USD)<br><span style="font-weight:400;color:var(--accent);font-size:9px;opacity:.7">se calcula si llenas Total</span></th>
+                    <th>Precio Total (USD)<br><span style="font-weight:400;color:var(--accent);font-size:9px;opacity:.7">se calcula si llenas Unitario</span></th>
                     <th>Días de entrega</th>
                     <th></th>
                   </tr>
@@ -574,6 +701,30 @@
   </div>
 </div>
 
+<!-- COPY FIELD MODAL -->
+<div class="modal-overlay" id="copy-modal-overlay" onclick="closeCopyModalOnBg(event)">
+  <div class="modal copy-modal">
+    <div class="modal-header">
+      <h3>Copiar campo a otros materiales</h3>
+      <button class="modal-close" onclick="closeCopyModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="copy-field-desc" style="font-size:12px;color:var(--muted);padding:2px 0 2px"></p>
+      <div class="form-group">
+        <label class="form-label">Filtrar materiales destino</label>
+        <input class="copy-search-input" id="copy-search-input"
+          placeholder="Escribe para filtrar..." oninput="filterCopyTree(this.value)">
+      </div>
+      <div class="copy-tree-container" id="copy-tree-container"></div>
+    </div>
+    <div class="modal-footer">
+      <span id="copy-sel-count" class="copy-sel-count"></span>
+      <button class="btn btn-secondary" onclick="closeCopyModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="submitCopyField()">Copiar a seleccionados</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -590,7 +741,7 @@
     { label: 'Descripción',           type: 'textarea', required: true },
     { label: 'Imágenes del producto', type: 'images',   required: true },
     { label: 'Vigencia de la propuesta', type: 'select', required: true,
-      options: ['1 mes', '2 meses', '3 meses', '6 meses', '12 meses'] },
+      options: ['3 meses', '6 meses', '12 meses', '24 meses'] },
   ];
 
   const TYPE_LABELS = {
@@ -609,8 +760,8 @@
 
   // ── STATE ──────────────────────────────────────────────────────────────────
   let taxonomy = [];
-  let formDefs = { categoryFields: {}, materialFields: {}, costosRows: [] };
-  let selected = { category: null, subcategory: null, material: null };
+  let formDefs = { categoryFields: {}, subcategoryFields: {}, subsubcategoryFields: {}, materialFields: {}, costosRows: [] };
+  let selected = { category: null, subcategory: null, subsubcategory: null, material: null };
   let modalCtx = { scope: null, editIdx: null };
   let costosRows = [];
 
@@ -619,6 +770,16 @@
 
   // ── INIT ───────────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', async () => {
+    // Init theme
+    const savedTheme = localStorage.getItem('catalogo-theme') || 'dark';
+    document.documentElement.dataset.theme = savedTheme;
+    const btnTheme = document.getElementById('btn-theme');
+    if (btnTheme) btnTheme.textContent = savedTheme === 'light' ? '☀️' : '🌙';
+
+    // Calcular altura del header para sticky sidebar
+    const hdr = document.querySelector('.app-header');
+    if (hdr) document.documentElement.style.setProperty('--header-h', hdr.offsetHeight + 'px');
+
     setStatus('connecting');
     taxonomy = await loadTaxonomy();
     formDefs  = await loadFormDefs();
@@ -690,6 +851,7 @@
         <span class="tree-arrow open">▶</span>
         <span class="cat-dot" style="background:${color}"></span>
         <span>${cat.name}</span>
+        <span class="cat-count">${countCatItems(cat)}</span>
       `;
       labelEl.onclick = () => toggleCat(catEl, labelEl);
       catEl.appendChild(labelEl);
@@ -698,8 +860,12 @@
       subcatsEl.className = 'tree-subcat';
 
       (cat.subcategories || []).forEach(sub => {
-        if (!sub.items || sub.items.length === 0) return;
+        const hasDirectItems = sub.items && sub.items.length > 0;
+        const hasSubsubs = sub.subsubcategories && sub.subsubcategories.length > 0;
+        if (!hasDirectItems && !hasSubsubs) return;
+
         const subEl = document.createElement('div');
+        subEl.className = 'tree-subcat-group';
 
         const subLabel = document.createElement('div');
         subLabel.className = 'tree-subcat-label';
@@ -707,20 +873,52 @@
         subLabel.onclick = () => toggleSubcat(subEl, subLabel);
         subEl.appendChild(subLabel);
 
-        const itemsEl = document.createElement('div');
-        itemsEl.className = 'tree-items';
-        (sub.items || []).forEach(item => {
-          const itemEl = document.createElement('div');
-          itemEl.className = 'tree-item' + (item.dup ? ' dup' : '');
-          itemEl.textContent = item.text + (item.dup ? ' ⚑' : '');
-          itemEl.dataset.cat  = cat.name;
-          itemEl.dataset.sub  = sub.name;
-          itemEl.dataset.mat  = item.text;
-          itemEl.onclick = () => selectMaterial(cat, sub, item, itemEl);
-          itemsEl.appendChild(itemEl);
+        if (hasDirectItems) {
+          const itemsEl = document.createElement('div');
+          itemsEl.className = 'tree-items';
+          (sub.items || []).forEach(item => {
+            const itemEl = document.createElement('div');
+            itemEl.className = 'tree-item' + (item.dup ? ' dup' : '');
+            itemEl.textContent = item.text + (item.dup ? ' ⚑' : '');
+            itemEl.dataset.cat = cat.name;
+            itemEl.dataset.sub = sub.name;
+            itemEl.dataset.mat = item.text;
+            itemEl.onclick = () => selectMaterial(cat, sub, null, item, itemEl);
+            itemsEl.appendChild(itemEl);
+          });
+          subEl.appendChild(itemsEl);
+        }
+
+        (sub.subsubcategories || []).forEach(ssub => {
+          if (!ssub.items || ssub.items.length === 0) return;
+
+          const ssubEl = document.createElement('div');
+          ssubEl.className = 'tree-subsubcat';
+
+          const ssubLabel = document.createElement('div');
+          ssubLabel.className = 'tree-subsubcat-label';
+          ssubLabel.innerHTML = `<span class="tree-arrow open">▶</span><span>${ssub.name}</span>`;
+          ssubLabel.onclick = () => toggleSubsubcat(ssubEl, ssubLabel);
+          ssubEl.appendChild(ssubLabel);
+
+          const subitemsEl = document.createElement('div');
+          subitemsEl.className = 'tree-subitems';
+          (ssub.items || []).forEach(item => {
+            const itemEl = document.createElement('div');
+            itemEl.className = 'tree-subitem' + (item.dup ? ' dup' : '');
+            itemEl.textContent = item.text + (item.dup ? ' ⚑' : '');
+            itemEl.dataset.cat  = cat.name;
+            itemEl.dataset.sub  = sub.name;
+            itemEl.dataset.ssub = ssub.name;
+            itemEl.dataset.mat  = item.text;
+            itemEl.onclick = () => selectMaterial(cat, sub, ssub, item, itemEl);
+            subitemsEl.appendChild(itemEl);
+          });
+
+          ssubEl.appendChild(subitemsEl);
+          subEl.appendChild(ssubEl);
         });
 
-        subEl.appendChild(itemsEl);
         subcatsEl.appendChild(subEl);
       });
 
@@ -738,27 +936,52 @@
 
   function toggleSubcat(subEl, subLabel) {
     const arrow = subLabel.querySelector('.tree-arrow');
-    const items = subEl.querySelector('.tree-items');
+    const open  = arrow.classList.toggle('open');
+    [...subEl.querySelectorAll(':scope > .tree-items, :scope > .tree-subsubcat')].forEach(el => {
+      el.style.display = open ? '' : 'none';
+    });
+  }
+
+  function toggleSubsubcat(ssubEl, ssubLabel) {
+    const arrow = ssubLabel.querySelector('.tree-arrow');
+    const items = ssubEl.querySelector('.tree-subitems');
     const open  = arrow.classList.toggle('open');
     items.style.display = open ? '' : 'none';
   }
 
-  function selectMaterial(cat, sub, item, el) {
-    document.querySelectorAll('.tree-item').forEach(e => e.classList.remove('selected'));
+  function selectMaterial(cat, sub, ssub, item, el) {
+    document.querySelectorAll('.tree-item, .tree-subitem').forEach(e => e.classList.remove('selected'));
     el.classList.add('selected');
-    selected = { category: cat.name, subcategory: sub.name, material: item.text };
+    selected = {
+      category: cat.name,
+      subcategory: sub.name,
+      subsubcategory: ssub ? ssub.name : null,
+      material: item.text,
+    };
     renderBuilder();
     if (window.innerWidth <= 768) closeSidebar();
   }
 
   // ── BUILDER ────────────────────────────────────────────────────────────────
   function renderBuilder() {
-    const { category, subcategory, material } = selected;
+    const { category, subcategory, subsubcategory, material } = selected;
 
-    document.getElementById('breadcrumb').innerHTML =
-      `${category} &rsaquo; ${subcategory} &rsaquo; <span>${material}</span>`;
-    document.getElementById('cat-section-name').textContent = `· ${category}`;
-    document.getElementById('mat-section-name').textContent = `· ${material}`;
+    document.getElementById('breadcrumb').innerHTML = subsubcategory
+      ? `${category} &rsaquo; ${subcategory} &rsaquo; ${subsubcategory} &rsaquo; <span>${material}</span>`
+      : `${category} &rsaquo; ${subcategory} &rsaquo; <span>${material}</span>`;
+
+    document.getElementById('cat-section-name').textContent    = `· ${category}`;
+    document.getElementById('subcat-section-name').textContent = `· ${subcategory}`;
+    document.getElementById('mat-section-name').textContent    = `· ${material}`;
+
+    const subsubSection = document.getElementById('subsubcat-section');
+    if (subsubcategory) {
+      subsubSection.style.display = '';
+      document.getElementById('subsubcat-section-name').textContent = `· ${subsubcategory}`;
+    } else {
+      subsubSection.style.display = 'none';
+    }
+
     document.getElementById('specs-sub').textContent =
       'Define los campos que el proveedor debe completar para este tipo de material';
     document.getElementById('specs-placeholder').style.display = 'none';
@@ -767,6 +990,8 @@
     document.getElementById('btn-preview').style.display = 'inline-flex';
 
     renderCategoryFields();
+    renderSubcategoryFields();
+    renderSubsubcategoryFields();
     renderMaterialFields();
   }
 
@@ -785,6 +1010,29 @@
     fields.forEach((f, i) => body.appendChild(makeFieldCard(f, false, 'category', i)));
     if (fields.length === 0) {
       body.innerHTML = '<p style="font-size:12px;color:var(--muted);padding:4px 0">Sin campos de categoría definidos aún.</p>';
+    }
+  }
+
+  function renderSubcategoryFields() {
+    const body = document.getElementById('subcat-fields-body');
+    body.innerHTML = '';
+    const key = subcatKey();
+    const fields = formDefs.subcategoryFields[key] || [];
+    fields.forEach((f, i) => body.appendChild(makeFieldCard(f, false, 'subcategory', i)));
+    if (fields.length === 0) {
+      body.innerHTML = '<p style="font-size:12px;color:var(--muted);padding:4px 0">Sin campos de subcategoría definidos aún.</p>';
+    }
+  }
+
+  function renderSubsubcategoryFields() {
+    if (!selected.subsubcategory) return;
+    const body = document.getElementById('subsubcat-fields-body');
+    body.innerHTML = '';
+    const key = subsubcatKey();
+    const fields = formDefs.subsubcategoryFields[key] || [];
+    fields.forEach((f, i) => body.appendChild(makeFieldCard(f, false, 'subsubcategory', i)));
+    if (fields.length === 0) {
+      body.innerHTML = '<p style="font-size:12px;color:var(--muted);padding:4px 0">Sin campos de sub-subcategoría definidos aún.</p>';
     }
   }
 
@@ -819,6 +1067,7 @@
       </div>
       ${!locked ? `
       <div class="field-actions">
+        <button class="icon-btn" title="Copiar a..." onclick="openCopyModal('${scope}',${idx})" style="font-size:14px">⎘</button>
         <button class="icon-btn" title="Editar" onclick="editField('${scope}',${idx})">✏️</button>
         <button class="icon-btn del" title="Eliminar" onclick="deleteField('${scope}',${idx})">×</button>
       </div>` : ''}
@@ -842,26 +1091,35 @@
     });
   }
 
-  ['cat-fields-body','mat-fields-body'].forEach(id => {
+  const DRAG_SCOPE_MAP = {
+    'cat-fields-body':       'category',
+    'subcat-fields-body':    'subcategory',
+    'subsubcat-fields-body': 'subsubcategory',
+    'mat-fields-body':       'material',
+  };
+  Object.keys(DRAG_SCOPE_MAP).forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener('dragover', e => {
       e.preventDefault();
+      if (!dragPlaceholder) return;
       const after = getDragAfter(el, e.clientY);
       after ? el.insertBefore(dragPlaceholder, after) : el.appendChild(dragPlaceholder);
     });
     el.addEventListener('drop', e => {
       e.preventDefault();
-      if (!dragCard) return;
-      const scope  = id === 'cat-fields-body' ? 'category' : 'material';
-      const fields = getFields(dragCard.scope);
+      if (!dragCard || !dragPlaceholder) return;
+      const targetScope = DRAG_SCOPE_MAP[id];
+      if (dragCard.scope !== targetScope) return;
+      const fields  = getFields(dragCard.scope);
       const [moved] = fields.splice(dragCard.idx, 1);
       const cards   = [...el.querySelectorAll('.field-card:not(.dragging)')];
       const afterEl = getDragAfter(el, e.clientY);
       const newIdx  = afterEl ? cards.indexOf(afterEl) : cards.length;
-      getFields(dragCard.scope).splice(newIdx, 0, moved);
+      fields.splice(newIdx, 0, moved);
+      setFields(dragCard.scope, fields);
       saveState();
-      dragCard.scope === 'category' ? renderCategoryFields() : renderMaterialFields();
+      rerenderScope(dragCard.scope);
     });
   });
 
@@ -962,9 +1220,7 @@
     saveState();
     closeModal();
 
-    if (modalCtx.scope === 'category') renderCategoryFields();
-    else renderMaterialFields();
-
+    rerenderScope(modalCtx.scope);
     showToast(modalCtx.editIdx !== null ? 'Campo actualizado' : `"${label}" agregado`);
   }
 
@@ -977,14 +1233,31 @@
     fields.splice(idx, 1);
     setFields(scope, fields);
     saveState();
-    scope === 'category' ? renderCategoryFields() : renderMaterialFields();
+    rerenderScope(scope);
     showToast(`"${name}" eliminado`);
   }
 
+  function rerenderScope(scope) {
+    if (scope === 'category')       renderCategoryFields();
+    else if (scope === 'subcategory')    renderSubcategoryFields();
+    else if (scope === 'subsubcategory') renderSubsubcategoryFields();
+    else                                 renderMaterialFields();
+  }
+
   // ── FIELD HELPERS ──────────────────────────────────────────────────────────
+  function subcatKey() {
+    return `${selected.category}.${selected.subcategory}`;
+  }
+
+  function subsubcatKey() {
+    return `${selected.category}.${selected.subcategory}.${selected.subsubcategory}`;
+  }
+
   function matKey() {
-    const { category, subcategory, material } = selected;
-    return `${category}.${subcategory}.${material}`;
+    const { category, subcategory, subsubcategory, material } = selected;
+    return subsubcategory
+      ? `${category}.${subcategory}.${subsubcategory}.${material}`
+      : `${category}.${subcategory}.${material}`;
   }
 
   function getFields(scope) {
@@ -992,32 +1265,53 @@
       formDefs.categoryFields[selected.category] = formDefs.categoryFields[selected.category] || [];
       return formDefs.categoryFields[selected.category];
     }
+    if (scope === 'subcategory') {
+      const k = subcatKey();
+      formDefs.subcategoryFields[k] = formDefs.subcategoryFields[k] || [];
+      return formDefs.subcategoryFields[k];
+    }
+    if (scope === 'subsubcategory') {
+      const k = subsubcatKey();
+      formDefs.subsubcategoryFields[k] = formDefs.subsubcategoryFields[k] || [];
+      return formDefs.subsubcategoryFields[k];
+    }
     const k = matKey();
     formDefs.materialFields[k] = formDefs.materialFields[k] || [];
     return formDefs.materialFields[k];
   }
 
   function setFields(scope, fields) {
-    if (scope === 'category') formDefs.categoryFields[selected.category] = fields;
-    else formDefs.materialFields[matKey()] = fields;
+    if (scope === 'category')       formDefs.categoryFields[selected.category] = fields;
+    else if (scope === 'subcategory')    formDefs.subcategoryFields[subcatKey()] = fields;
+    else if (scope === 'subsubcategory') formDefs.subsubcategoryFields[subsubcatKey()] = fields;
+    else                                 formDefs.materialFields[matKey()] = fields;
   }
 
   // ── PREVIEW ────────────────────────────────────────────────────────────────
   function previewForm() {
-    const { category, subcategory, material } = selected;
-    const catFields  = formDefs.categoryFields[category] || [];
-    const matFields  = formDefs.materialFields[matKey()]  || [];
-    const techTotal  = catFields.length + matFields.length;
-    const reqTech    = [...catFields, ...matFields].filter(f => f.required).length;
+    const { category, subcategory, subsubcategory, material } = selected;
+    const catFields    = formDefs.categoryFields[category]               || [];
+    const subFields    = formDefs.subcategoryFields[subcatKey()]          || [];
+    const ssubFields   = subsubcategory ? (formDefs.subsubcategoryFields[subsubcatKey()] || []) : [];
+    const matFields    = formDefs.materialFields[matKey()]               || [];
+    const allTech      = [...catFields, ...subFields, ...ssubFields, ...matFields];
+    const techTotal    = allTech.length;
+    const reqTech      = allTech.filter(f => f.required).length;
+    const path = subsubcategory
+      ? `${category} › ${subcategory} › ${subsubcategory}`
+      : `${category} › ${subcategory}`;
+    const fmtList = (arr) => arr.length ? arr.map(f => f.label).join(', ') : 'sin campos';
     alert(
       `Vista previa — ${material}\n` +
-      `${category} › ${subcategory}\n` +
+      `${path}\n` +
       `${'─'.repeat(40)}\n\n` +
       `📋 INFORMACIÓN BÁSICA (${COMMON_FIELDS.length} campos — fijos)\n` +
       COMMON_FIELDS.map(f => `   • ${f.label}`).join('\n') + '\n\n' +
       `⚙️ ESPECIFICACIONES TÉCNICAS (${techTotal} campos)\n` +
-      `   Categoría "${category}" (${catFields.length}): ` + (catFields.length ? catFields.map(f=>f.label).join(', ') : 'sin campos') + '\n' +
-      `   Material "${material}" (${matFields.length}): ` + (matFields.length ? matFields.map(f=>f.label).join(', ') : 'sin campos') + '\n\n' +
+      `   Categoría "${category}" (${catFields.length}): ${fmtList(catFields)}\n` +
+      `   Subcategoría "${subcategory}" (${subFields.length}): ${fmtList(subFields)}\n` +
+      (subsubcategory ? `   Sub-subcategoría "${subsubcategory}" (${ssubFields.length}): ${fmtList(ssubFields)}\n` : '') +
+      `   Material "${material}" (${matFields.length}): ${fmtList(matFields)}\n\n` +
       `💰 COSTOS — Escala de precios y tiempos (fijo)\n` +
       `   Cantidad / Precio unitario / Precio Total / Días de entrega\n\n` +
       `─── Campos requeridos en Especificaciones: ${reqTech} de ${techTotal}`
@@ -1030,19 +1324,35 @@
     pushFormsToSupabase();
   }
 
+  function migrateFormDefs(d) {
+    d.subcategoryFields    = d.subcategoryFields    || {};
+    d.subsubcategoryFields = d.subsubcategoryFields || {};
+    d.categoryFields       = d.categoryFields       || {};
+    d.materialFields       = d.materialFields       || {};
+    d.costosRows = (d.costosRows || []).map(r => ({
+      cantidad:    r.cantidad    ?? '',
+      precio:      r.precio      ?? '',
+      precioTotal: r.precioTotal ?? '',
+      precioMode:  r.precioMode  ?? null,
+      dias:        r.dias        ?? '',
+    }));
+    return d;
+  }
+
   async function loadFormDefs() {
     try {
       const { data, error } = await DB.from('app_state').select('value').eq('key', 'forms').single();
       if (!error && data) {
-        localStorage.setItem(FORMS_KEY, JSON.stringify(data.value));
-        return data.value;
+        const d = migrateFormDefs(data.value);
+        localStorage.setItem(FORMS_KEY, JSON.stringify(d));
+        return d;
       }
     } catch(e) {}
     try {
       const raw = localStorage.getItem(FORMS_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) return migrateFormDefs(JSON.parse(raw));
     } catch(e) {}
-    return { categoryFields: {}, materialFields: {}, costosRows: [] };
+    return { categoryFields: {}, subcategoryFields: {}, subsubcategoryFields: {}, materialFields: {}, costosRows: [] };
   }
 
   function saveManual() { saveState(); showToast('Guardado ✓'); }
@@ -1050,8 +1360,10 @@
   function exportJSON() {
     const data = {
       exportedAt: new Date().toISOString(),
-      categoryFields: formDefs.categoryFields,
-      materialFields: formDefs.materialFields,
+      categoryFields:      formDefs.categoryFields,
+      subcategoryFields:   formDefs.subcategoryFields,
+      subsubcategoryFields: formDefs.subsubcategoryFields,
+      materialFields:      formDefs.materialFields,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -1067,26 +1379,50 @@
     if (!tbody) return;
     tbody.innerHTML = '';
     costosRows.forEach((row, i) => {
-      const isLast = i === costosRows.length - 1;
+      // normalizar campos si vienen de formato viejo
+      row.precioTotal = row.precioTotal ?? '';
+      row.precioMode  = row.precioMode  ?? null;
+
+      const modeUnit  = row.precioMode === 'unit';
+      const modeTotal = row.precioMode === 'total';
+
+      const precioClass = modeTotal ? 'table-input auto-input' : 'table-input';
+      const totalClass  = modeUnit  ? 'table-input auto-input' : 'table-input';
+      const precioRo    = modeTotal ? 'readonly' : '';
+      const totalRo     = modeUnit  ? 'readonly' : '';
+
+      const dispCant  = row.cantidad  && parseNum(row.cantidad)  ? fmtNumber(parseNum(row.cantidad),  0) : (row.cantidad  || '');
+      const dispPrecio = row.precio   && parseNum(row.precio)    ? fmtNumber(parseNum(row.precio),    2) : (row.precio    || '');
+      const dispTotal  = row.precioTotal && parseNum(row.precioTotal) ? fmtNumber(parseNum(row.precioTotal), 2) : (row.precioTotal || '');
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>
-          <div style="display:flex;align-items:center;gap:4px">
-            <input class="table-input" value="${row.cantidad}" placeholder="Ej: 50"
-              oninput="updateCostos(${i},'cantidad',this.value)">
-          </div>
+          <input class="table-input" id="cc-${i}" value="${dispCant}" placeholder="Ej: 50"
+            oninput="onCostosInput(${i},'cantidad',this.value)"
+            onblur="fmtCostosBlur(${i},'cantidad',this)">
         </td>
         <td>
           <div class="precio-wrap">
             <span class="precio-prefix">$</span>
-            <input class="table-input" value="${row.precio}" placeholder="0.00"
-              oninput="updateCostos(${i},'precio',this.value)">
+            <input class="${precioClass}" id="cp-${i}" value="${dispPrecio}" placeholder="0.00"
+              ${precioRo} oninput="onCostosInput(${i},'precio',this.value)"
+              onblur="fmtCostosBlur(${i},'precio',this)">
           </div>
+          <div class="auto-badge" id="cp-badge-${i}" style="${modeTotal ? '' : 'display:none'}">⟳ calculado</div>
         </td>
-        <td class="auto-calc" id="total-${i}">${calcTotal(row.cantidad, row.precio)}</td>
         <td>
-          <input class="table-input" value="${row.dias}" placeholder="Ej: 15"
-            oninput="updateCostos(${i},'dias',this.value)">
+          <div class="precio-wrap">
+            <span class="precio-prefix">$</span>
+            <input class="${totalClass}" id="ct-${i}" value="${dispTotal}" placeholder="0.00"
+              ${totalRo} oninput="onCostosInput(${i},'precioTotal',this.value)"
+              onblur="fmtCostosBlur(${i},'precioTotal',this)">
+          </div>
+          <div class="auto-badge" id="ct-badge-${i}" style="${modeUnit ? '' : 'display:none'}">⟳ calculado</div>
+        </td>
+        <td>
+          <input class="table-input" id="cd-${i}" value="${row.dias || ''}" placeholder="Ej: 15"
+            oninput="onCostosInput(${i},'dias',this.value)">
         </td>
         <td>
           <button class="icon-btn del" onclick="deleteCostosRow(${i})"
@@ -1097,15 +1433,81 @@
     });
   }
 
-  function calcTotal(cantidad, precio) {
-    const c = parseFloat(String(cantidad).replace(/[^0-9.]/g, ''));
-    const p = parseFloat(String(precio).replace(/[^0-9.]/g, ''));
-    if (isNaN(c) || isNaN(p) || c === 0 || p === 0) return '—';
-    return '$ ' + (c * p).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function onCostosInput(idx, field, value) {
+    const row = costosRows[idx];
+    row[field] = value;
+
+    const cantidad     = parseNum(row.cantidad);
+    const precioEl     = document.getElementById(`cp-${idx}`);
+    const totalEl      = document.getElementById(`ct-${idx}`);
+    const precioBadge  = document.getElementById(`cp-badge-${idx}`);
+    const totalBadge   = document.getElementById(`ct-badge-${idx}`);
+
+    function makeAuto(el, badge, val) {
+      if (!el) return;
+      el.value = val;
+      el.readOnly = true;
+      el.classList.add('auto-input');
+      if (badge) badge.style.display = '';
+    }
+    function makeManual(el, badge) {
+      if (!el) return;
+      el.readOnly = false;
+      el.classList.remove('auto-input');
+      if (badge) badge.style.display = 'none';
+    }
+
+    if (field === 'precio') {
+      const p = parseNum(value);
+      if (p > 0 && value.trim() !== '') {
+        row.precioMode  = 'unit';
+        const t = cantidad > 0 ? cantidad * p : 0;
+        row.precioTotal = t > 0 ? fmtNumber(t, 2) : '';
+        makeAuto(totalEl, totalBadge, row.precioTotal);
+        makeManual(precioEl, precioBadge);
+      } else {
+        row.precioMode  = null;
+        row.precioTotal = '';
+        makeManual(precioEl, precioBadge);
+        makeManual(totalEl,  totalBadge);
+        if (totalEl) totalEl.value = '';
+      }
+
+    } else if (field === 'precioTotal') {
+      const t = parseNum(value);
+      if (t > 0 && value.trim() !== '') {
+        row.precioMode = 'total';
+        const p = cantidad > 0 ? t / cantidad : 0;
+        row.precio = p > 0 ? fmtNumber(p, 2) : '';
+        makeAuto(precioEl, precioBadge, row.precio);
+        makeManual(totalEl, totalBadge);
+      } else {
+        row.precioMode = null;
+        row.precio     = '';
+        makeManual(precioEl, precioBadge);
+        makeManual(totalEl,  totalBadge);
+        if (precioEl) precioEl.value = '';
+      }
+
+    } else if (field === 'cantidad') {
+      if (row.precioMode === 'unit') {
+        const p = parseNum(row.precio);
+        const t = cantidad > 0 && p > 0 ? cantidad * p : 0;
+        row.precioTotal = t > 0 ? fmtNumber(t, 2) : '';
+        if (totalEl) totalEl.value = row.precioTotal;
+      } else if (row.precioMode === 'total') {
+        const t = parseNum(row.precioTotal);
+        const p = cantidad > 0 && t > 0 ? t / cantidad : 0;
+        row.precio = p > 0 ? fmtNumber(p, 2) : '';
+        if (precioEl) precioEl.value = row.precio;
+      }
+    }
+
+    saveCostosState();
   }
 
   function addCostosRow() {
-    costosRows.push({ cantidad: '', precio: '', dias: '' });
+    costosRows.push({ cantidad: '', precio: '', precioTotal: '', precioMode: null, dias: '' });
     renderCostosRows();
     saveCostosState();
   }
@@ -1114,13 +1516,6 @@
     if (costosRows.length === 1) return;
     costosRows.splice(idx, 1);
     renderCostosRows();
-    saveCostosState();
-  }
-
-  function updateCostos(idx, field, value) {
-    costosRows[idx][field] = value;
-    const cell = document.getElementById(`total-${idx}`);
-    if (cell) cell.textContent = calcTotal(costosRows[idx].cantidad, costosRows[idx].precio);
     saveCostosState();
   }
 
@@ -1148,6 +1543,212 @@
     t.textContent = msg; t.classList.add('show');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ── THEME ─────────────────────────────────────────────────────────────────
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isLight = html.dataset.theme === 'light';
+    html.dataset.theme = isLight ? 'dark' : 'light';
+    document.getElementById('btn-theme').textContent = isLight ? '🌙' : '☀️';
+    localStorage.setItem('catalogo-theme', html.dataset.theme);
+  }
+
+  // ── NUMBER FORMATTING ──────────────────────────────────────────────────────
+  function fmtNumber(val, decimals) {
+    const n = typeof val === 'number' ? val : parseFloat(String(val).replace(/,/g, ''));
+    if (isNaN(n)) return String(val);
+    const fixed = n.toFixed(decimals);
+    const parts = fixed.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return decimals > 0 ? parts.join('.') : parts[0];
+  }
+
+  function parseNum(val) {
+    return parseFloat(String(val).replace(/,/g, '')) || 0;
+  }
+
+  function fmtCostosBlur(idx, field, el) {
+    if (!el.value.trim() || el.readOnly) return;
+    const decimals = (field === 'precio' || field === 'precioTotal') ? 2 : 0;
+    const n = parseNum(el.value);
+    if (!n) return;
+    el.value = fmtNumber(n, decimals);
+    costosRows[idx][field] = el.value;
+  }
+
+  // ── SIDEBAR SEARCH ─────────────────────────────────────────────────────────
+  function filterTree(query) {
+    const q = query.toLowerCase().trim();
+    if (!q) {
+      document.querySelectorAll('.tree-cat').forEach(c => c.style.display = '');
+      document.querySelectorAll('.tree-subcat-group').forEach(g => g.style.display = '');
+      document.querySelectorAll('.tree-item, .tree-subitem').forEach(el => {
+        el.style.display = '';
+        el.classList.remove('search-match');
+      });
+      return;
+    }
+    document.querySelectorAll('.tree-cat').forEach(catEl => {
+      const items = [...catEl.querySelectorAll('.tree-item, .tree-subitem')];
+      const anyMatch = items.some(el => el.textContent.toLowerCase().replace('⚑','').trim().includes(q));
+      catEl.style.display = anyMatch ? '' : 'none';
+      if (!anyMatch) return;
+      items.forEach(el => {
+        const match = el.textContent.toLowerCase().replace('⚑','').trim().includes(q);
+        el.style.display = match ? '' : 'none';
+        el.classList.toggle('search-match', match);
+        if (match) {
+          const group = el.closest('.tree-subcat-group');
+          if (group) group.style.display = '';
+          const ssub = el.closest('.tree-subsubcat');
+          if (ssub) ssub.style.display = '';
+          const items2 = el.closest('.tree-items, .tree-subitems');
+          if (items2) items2.style.display = '';
+        }
+      });
+      catEl.querySelectorAll('.tree-subcat-group').forEach(g => {
+        const visible = [...g.querySelectorAll('.tree-item, .tree-subitem')].some(el => el.style.display !== 'none');
+        g.style.display = visible ? '' : 'none';
+      });
+    });
+  }
+
+  function expandAllTree() {
+    document.querySelectorAll('.tree-arrow').forEach(a => a.classList.add('open'));
+    document.querySelectorAll('.tree-subcat, .tree-subcat-group, .tree-items, .tree-subitems, .tree-subsubcat').forEach(el => el.style.display = '');
+  }
+
+  function collapseAllTree() {
+    document.querySelectorAll('.tree-cat > .tree-subcat').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.tree-cat-label .tree-arrow').forEach(a => a.classList.remove('open'));
+    document.querySelectorAll('.tree-subcat-group > .tree-items, .tree-subcat-group > .tree-subsubcat').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.tree-subcat-label .tree-arrow').forEach(a => a.classList.remove('open'));
+  }
+
+  function countCatItems(cat) {
+    return (cat.subcategories || []).reduce((sum, sub) => {
+      const direct = (sub.items || []).length;
+      const nested = (sub.subsubcategories || []).reduce((s, ss) => s + (ss.items || []).length, 0);
+      return sum + direct + nested;
+    }, 0);
+  }
+
+  // ── COPY FIELD ─────────────────────────────────────────────────────────────
+  let copyCtx = { scope: null, idx: null };
+
+  function openCopyModal(scope, idx) {
+    copyCtx = { scope, idx };
+    const field = getFields(scope)[idx];
+    document.getElementById('copy-field-desc').textContent =
+      `Copiando: "${field.label}" · ${TYPE_LABELS[field.type] || field.type}${field.required ? ' · Requerido' : ''}`;
+    document.getElementById('copy-search-input').value = '';
+    document.getElementById('copy-sel-count').textContent = '';
+    buildCopyTree('');
+    document.getElementById('copy-modal-overlay').classList.add('open');
+  }
+
+  function closeCopyModal() {
+    document.getElementById('copy-modal-overlay').classList.remove('open');
+  }
+
+  function closeCopyModalOnBg(e) {
+    if (e.target === document.getElementById('copy-modal-overlay')) closeCopyModal();
+  }
+
+  function buildCopyTree(filter) {
+    const container = document.getElementById('copy-tree-container');
+    container.innerHTML = '';
+    const q = filter.toLowerCase().trim();
+    const { category: selCat, subcategory: selSub, subsubcategory: selSsub, material: selMat } = selected;
+
+    taxonomy.forEach(cat => {
+      const matItems = [];
+      (cat.subcategories || []).forEach(sub => {
+        (sub.items || []).forEach(item => {
+          const label = `${cat.name} › ${sub.name} › ${item.text}`;
+          const key   = `${cat.name}.${sub.name}.${item.text}`;
+          const isCurrent = cat.name === selCat && sub.name === selSub && !selSsub && item.text === selMat;
+          if (!q || label.toLowerCase().includes(q)) {
+            matItems.push({ label, key, isCurrent });
+          }
+        });
+        (sub.subsubcategories || []).forEach(ssub => {
+          (ssub.items || []).forEach(item => {
+            const label = `${cat.name} › ${sub.name} › ${ssub.name} › ${item.text}`;
+            const key   = `${cat.name}.${sub.name}.${ssub.name}.${item.text}`;
+            const isCurrent = cat.name === selCat && sub.name === selSub && ssub.name === selSsub && item.text === selMat;
+            if (!q || label.toLowerCase().includes(q)) {
+              matItems.push({ label, key, isCurrent });
+            }
+          });
+        });
+      });
+      if (!matItems.length) return;
+
+      const section = document.createElement('div');
+      section.className = 'copy-tree-section';
+
+      const color = CAT_COLORS[cat.catClass] || '#58a6ff';
+      const catHdr = document.createElement('div');
+      catHdr.className = 'copy-tree-cat-label';
+      catHdr.innerHTML = `<span style="width:7px;height:7px;border-radius:2px;background:${color};display:inline-block;flex-shrink:0"></span>${cat.name}`;
+      section.appendChild(catHdr);
+
+      matItems.forEach(({ label, key, isCurrent }) => {
+        const row = document.createElement('label');
+        row.className = 'copy-mat-item' + (isCurrent ? ' is-current' : '');
+        if (!isCurrent) {
+          const cb = document.createElement('input');
+          cb.type = 'checkbox'; cb.value = key; cb.name = 'copy-target';
+          cb.onchange = updateCopySelCount;
+          row.appendChild(cb);
+        } else {
+          const ph = document.createElement('span');
+          ph.style.cssText = 'width:13px;height:13px;display:inline-block;flex-shrink:0';
+          row.appendChild(ph);
+        }
+        const span = document.createElement('span');
+        span.textContent = label;
+        row.appendChild(span);
+        if (isCurrent) {
+          const badge = document.createElement('span');
+          badge.style.cssText = 'margin-left:auto;font-size:9px;opacity:.6';
+          badge.textContent = 'actual';
+          row.appendChild(badge);
+        }
+        section.appendChild(row);
+      });
+      container.appendChild(section);
+    });
+
+    if (!container.children.length) {
+      container.innerHTML = '<p style="padding:16px;text-align:center;font-size:12px;color:var(--muted)">Sin resultados</p>';
+    }
+  }
+
+  function filterCopyTree(q) { buildCopyTree(q); }
+
+  function updateCopySelCount() {
+    const n = document.querySelectorAll('#copy-tree-container input[name="copy-target"]:checked').length;
+    const el = document.getElementById('copy-sel-count');
+    el.textContent = n > 0 ? `${n} seleccionado(s)` : '';
+  }
+
+  function submitCopyField() {
+    const targets = [...document.querySelectorAll('#copy-tree-container input[name="copy-target"]:checked')]
+      .map(cb => cb.value);
+    if (!targets.length) { showToast('⚠ Selecciona al menos un material destino'); return; }
+    const field = { ...getFields(copyCtx.scope)[copyCtx.idx] };
+    let count = 0;
+    targets.forEach(key => {
+      formDefs.materialFields[key] = formDefs.materialFields[key] || [];
+      const already = formDefs.materialFields[key].some(f => f.key === field.key && f.label === field.label);
+      if (!already) { formDefs.materialFields[key].push({ ...field }); count++; }
+    });
+    saveState();
+    closeCopyModal();
+    showToast(count > 0 ? `Campo copiado a ${count} material(es) ✓` : 'El campo ya existía en los materiales seleccionados');
   }
 
   // ── DEFAULT TAXONOMY ───────────────────────────────────────────────────────
